@@ -27,7 +27,7 @@
 			 
 			        xhr.open(type, url, async);
 			        xhr.responseType = dataType;
-			        //if (data) data = Uint8Array(data);
+			        if (data) data = new Uint8Array(data);
 			        xhr.send(data);
 			      },
 			      abort: function() {

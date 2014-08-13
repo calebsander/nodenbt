@@ -19,29 +19,12 @@ var TAG_Compound = 0x0A;
 var TAG_Int_Array = 0x0B;
 
 var nbt, nbtobject;
-/*var filebuffer = new Buffer(0);
-var readstream = fs.createReadStream('nbt.dat');
-readstream.on('data', function(chunk) {
-	filebuffer = Buffer.concat([filebuffer, chunk]);
-});
-readstream.on('end', function() {
-	console.log(filebuffer.length);
-	zlib.gunzip(filebuffer, function(err, result) {
-		if (err) console.log(err);
-		else {
-			nbt = result;
-			nbtobject = readCompound(0).value[''];
-			console.log(util.inspect(nbtobject, false, null));
-		}
-	});
-});*/
 function processdat(filebuffer, res) {
 	zlib.gunzip(filebuffer, function(err, result) {
 		if (err) {
-			console.log(err);
-			nbt = filebuffer;
+			nbt = Buffer.concat([filebuffer, new Buffer([0x00])]);
 			try {
-				nbtobject = readCompound(0);
+				console.log(util.inspect(nbtobject = readCompound(0), false, null));
 				res.end(JSON.stringify({success: true, gzip: false}));
 			}
 			catch (error) {
@@ -50,11 +33,10 @@ function processdat(filebuffer, res) {
 			}
 		}
 		else {
-			nbt = result;
+			nbt = Buffer.concat([result, new Buffer([0x00])]);
 			try {
-				nbtobject = readCompound(0);
 				res.end(JSON.stringify({success: true, gzip: true}));
-				console.log(util.inspect(nbtobject, false, null));
+				console.log(util.inspect(nbtobject = readCompound(0), false, null));
 			}
 			catch (error) {
 				console.log(error);
@@ -200,7 +182,7 @@ function readList(offset) {
 			readType = 'TAG_Int_Array';
 			break;
 		default:
-			throw 'No such tag: ' + String(typebyte.value);
+			throw new Error('No such tag: ' + String(typebyte.value));
 	}
 	
 	var sizeint = readInt(offset);
@@ -280,7 +262,7 @@ function readCompound(offset) {
 				readType = 'TAG_Int_Array';
 				break;
 			default:
-				throw 'No such tag: ' + String(typebyte.value);
+				throw new Error('No such tag: ' + String(typebyte.value));
 		}
 		Compound[readName.value] = {
 			type: readType,
