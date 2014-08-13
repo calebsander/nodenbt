@@ -1,0 +1,104 @@
+<html>
+	<head>
+		<title>NBT Editor</title>
+		<link href = '/TAG_Compound.ico' rel = 'icon' />
+		<link href = '/bootstrap/css/bootstrap.css' rel = 'stylesheet' />
+		<link href = '/css/flat-ui.css' rel = 'stylesheet' />
+		<link type = 'text/css' href = '/stylesheet.css' rel = 'stylesheet' />
+		<script src = '/jquery.js'></script>
+		<script src = '/js/bootstrap.min.js'></script>
+		<script>
+	    $.ajaxTransport('+*', function(options, originalOptions, jqXHR) {
+			  if (window.FormData && ((options.dataType && (options.dataType == 'blob' || options.dataType == 'arraybuffer')) || (options.data && ((window.Blob && options.data instanceof Blob) || (window.ArrayBuffer && options.data instanceof ArrayBuffer))))) {
+			    return {
+			      send: function(headers, completeCallback) {
+			        var xhr = new XMLHttpRequest(),
+			          url = options.url || window.location.href,
+			          type = options.type || 'GET',
+			          dataType = options.dataType || 'text',
+			          data = options.data || null,
+			          async = options.async || true;
+			 
+			        xhr.addEventListener('load', function() {
+			          var res = {};
+			          res[dataType] = xhr.response;
+			          completeCallback(xhr.status, xhr.statusText, res, xhr.getAllResponseHeaders());
+			        });
+			 
+			        xhr.open(type, url, async);
+			        xhr.responseType = dataType;
+			        //if (data) data = Uint8Array(data);
+			        xhr.send(data);
+			      },
+			      abort: function() {
+			        jqXHR.abort();
+			      }
+			    };
+			  }
+			});
+
+			function FileDragHover(e) {
+				e.stopPropagation();
+				e.preventDefault();
+				e.target.className = (e.type == 'dragover' ? 'hover' : '');
+			}
+			function FileSelectHandler(e) {
+        FileDragHover(e);
+        var files;
+        if (e.dataTransfer) {
+        	if (e.dataTransfer.files) files = e.dataTransfer.files;
+        }
+        if (e.target) {
+        	if (e.target.files) files = e.target.files;
+        }
+        var readers = [];
+        for (var i = 0; i < files.length; i++) {
+          readers[i] = new FileReader();
+          readers[i].name = files[i].name;
+          readers[i].type = files[i].type;
+          readers[i].onload = function(e) {
+          	$.ajax({
+          		url: '/upload',
+          		type: 'POST',
+          		dataType: 'json',
+          		data: e.target.result,
+          		processData: false,
+          		success: (function() {
+          			return function(server_response) {
+          				console.log(server_response);
+          			}
+          		}())
+          	});
+          };
+          readers[i].readAsArrayBuffer(files[i]);
+        }
+      }
+
+			window.onload = function() {
+				var filedrag = $('#filedrag')[0];
+				filedrag.addEventListener('dragover', FileDragHover);
+        filedrag.addEventListener('dragleave', FileDragHover);
+        filedrag.addEventListener('drop', FileSelectHandler);
+			}
+		</script>
+	</head>
+	<body>
+		<nav class = 'navbar navbar-default navbar-inverse' role = 'navigation'>
+			<div class = 'navbar-header'>
+				<a class = 'navbar-brand' href = '#'>jNBT</a>
+			</div>
+			<ul class = 'nav navbar-nav'>
+				<li class = 'dropdown'>
+					<a href = '#' class = 'dropdown-toggle' data-toggle = 'dropdown'>
+						Open
+						<b class = 'caret'></b>
+					</a>
+					<span class = 'dropdown-arrow dropdown-arrow-inverse'></span>
+					<ul class = 'dropdown-menu dropdown-inverse'>
+						<li><div id = 'filedrag'>Drop files here</div></li>
+					</ul>
+				</li>
+		</nav>
+		<div id = 'body'></div>
+	</body>
+</html>
