@@ -56,5 +56,17 @@ div#body {
   right:0px;
   bottom:0px;
   z-index:0;
-  font-size:24;
+  font-size:12;
+  color:#000;
+}
+div#nbt {
+  position:absolute;
+  top:0px;
+  left:50px;
+  right:0px;
+  bottom:0px;
+  overflow:auto;
+}
+div.nbtcontainer {
+  padding-left:12px;
 }

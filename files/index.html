@@ -66,6 +66,22 @@
           		success: (function() {
           			return function(server_response) {
           				console.log(server_response);
+									//$('li#open').dropdown('toggle');
+									$('li#open').removeClass('open');
+          				if (server_response.success) {
+          					$.ajax({
+          						url: '/nbtjson',
+          						dataType: 'json',
+          						success: (function() {
+          							return function(server_response) {
+          								if (!server_response.success) return;
+          								$('div#nbt').children().remove();
+          								var server_response = server_response.data;
+          								$('div#nbt').append(renderJSON(server_response));
+          							}
+          						}())
+          					});
+          				}
           			}
           		}())
           	});
@@ -73,13 +89,67 @@
           readers[i].readAsArrayBuffer(files[i]);
         }
       }
+      
+      function renderJSON(data, key) {
+      	var display = $('<div>').addClass('tag');
+      	switch (data.type) {
+      		case 'TAG_Byte':
+      			if (key) return display.append($('<img>').attr('src', '/TAG_Byte.ico')).append($('<span>').text(key + ': ' + String(data.value)));
+      			else return display.append($('<img>').attr('src', '/TAG_Byte.ico')).append($('<span>').text(String(data.value)));
+      		case 'TAG_Short':
+      			if (key) return display.append($('<img>').attr('src', '/TAG_Short.ico')).append($('<span>').text(key + ': ' + String(data.value)));
+      			else return display.append($('<img>').attr('src', '/TAG_Short.ico')).append($('<span>').text(String(data.value)));
+      		case 'TAG_Int':
+      			if (key) return display.append($('<img>').attr('src', '/TAG_Int.ico')).append($('<span>').text(key + ': ' + String(data.value)));
+      			else return display.append($('<img>').attr('src', '/TAG_Int.ico')).append($('<span>').text(String(data.value)));
+      		case 'TAG_Long':
+      			if (key) return display.append($('<img>').attr('src', '/TAG_Long.ico')).append($('<span>').text(key + ': ' + data.value));
+      			else return display.append($('<img>').attr('src', '/TAG_Long.ico')).append($('<span>').text(data.value));
+      		case 'TAG_Float':
+      			if (key) return display.append($('<img>').attr('src', '/TAG_Float.ico')).append($('<span>').text(key + ': ' + String(data.value)));
+      			else return display.append($('<img>').attr('src', '/TAG_Float.ico')).append($('<span>').text(String(data.value)));
+      		case 'TAG_Double':
+      			if (key) return display.append($('<img>').attr('src', '/TAG_Double.ico')).append($('<span>').text(key + ': ' + String(data.value)));
+      			else return display.append($('<img>').attr('src', '/TAG_Double.ico')).append($('<span>').text(String(data.value)));
+      		case 'TAG_Byte_Array':
+      			var container = $('<div>').addClass('nbtcontainer');
+      			for (var i = 0; i < data.value.length; i++) container.append($('<div>').addClass('subtag').text(String(data.value[i])));
+      			if (key) return display.append($('<img>').attr('src', '/TAG_Byte_Array.ico')).append($('<span>').text(key + ':')).append(container);
+      			else return display.append($('<img>').attr('src', '/TAG_Byte_Array.ico')).append(container);
+      		case 'TAG_String':
+      			if (key) return display.append($('<img>').attr('src', '/TAG_String.ico')).append($('<span>').text(key + ': ' + data.value));
+      			else return display.append($('<img>').attr('src', '/TAG_String.ico')).append($('<span>').text(data.value));
+      		case 'TAG_List':
+      			var container = $('<div>').addClass('nbtcontainer');
+      			var element = {};
+      			for (var i = 0; i < data.value.list.length; i++) {
+      				element.value = $.extend(true, {}, data.value.list[i]);
+      				element.type = data.value.type;
+      				container.append(renderJSON(element));
+      			}
+      			if (key) return display.append($('<img>').attr('src', '/TAG_List.ico')).append($('<span>').text(key + ':')).append(container);
+      			else return display.append($('<img>').attr('src', '/' + data.value.type + '.ico')).append(container);
+      		case 'TAG_Compound':
+      			var container = $('<div>').addClass('nbtcontainer');
+      			for (var i in data.value) container.append(renderJSON(data.value[i], i));
+      			if (key) return display.append($('<img>').attr('src', '/TAG_Compound.ico')).append($('<span>').text(key + ':')).append(container);
+      			else return display.append($('<img>').attr('src', '/TAG_Compound.ico')).append(container);
+      		case 'TAG_Int_Array':
+      			var container = $('<div>').addClass('nbtcontainer');
+      			for (var i = 0; i < data.value.length; i++) container.append($('<div>').addClass('subtag').text(String(data.value[i])));
+      			if (key) return display.append($('<img>').attr('src', '/TAG_Int_Array.ico')).append($('<span>').text(key + ':')).append(container);
+      			else return display.append($('<img>').attr('src', '/TAG_Int_Array.ico')).append(container);
+      		default:
+      			throw new Error('No such tag: ' + data.type);
+      	}
+      }
 
 			window.onload = function() {
-				var filedrag = $('#filedrag')[0];
+				var filedrag = $('div#filedrag')[0];
 				filedrag.addEventListener('dragover', FileDragHover);
         filedrag.addEventListener('dragleave', FileDragHover);
         filedrag.addEventListener('drop', FileSelectHandler);
-			}
+			};
 		</script>
 	</head>
 	<body>
@@ -88,7 +158,7 @@
 				<a class = 'navbar-brand' href = '#'>jNBT</a>
 			</div>
 			<ul class = 'nav navbar-nav'>
-				<li class = 'dropdown'>
+				<li class = 'dropdown' id = 'open'>
 					<a href = '#' class = 'dropdown-toggle' data-toggle = 'dropdown'>
 						Open
 						<b class = 'caret'></b>
@@ -99,6 +169,8 @@
 					</ul>
 				</li>
 		</nav>
-		<div id = 'body'></div>
+		<div id = 'body'>
+			<div id = 'nbt'></div>
+		</div>
 	</body>
 </html>

@@ -22,9 +22,9 @@ var nbt, nbtobject;
 function processdat(filebuffer, res) {
 	zlib.gunzip(filebuffer, function(err, result) {
 		if (err) {
-			nbt = Buffer.concat([filebuffer, new Buffer([0x00])]);
+			nbt = Buffer.concat([filebuffer, new Buffer([TAG_End])]);
 			try {
-				console.log(util.inspect(nbtobject = readCompound(0), false, null));
+				console.log(util.inspect(nbtobject = readCompound(0).value[''], false, null));
 				res.end(JSON.stringify({success: true, gzip: false}));
 			}
 			catch (error) {
@@ -33,10 +33,10 @@ function processdat(filebuffer, res) {
 			}
 		}
 		else {
-			nbt = Buffer.concat([result, new Buffer([0x00])]);
+			nbt = Buffer.concat([result, new Buffer([TAG_End])]);
 			try {
 				res.end(JSON.stringify({success: true, gzip: true}));
-				console.log(util.inspect(nbtobject = readCompound(0), false, null));
+				console.log(util.inspect(nbtobject = readCompound(0).value[''], false, null));
 			}
 			catch (error) {
 				console.log(error);
@@ -299,65 +299,75 @@ function readInt_Array(offset) {
 	};
 }
 
-function return404(response) {
-  fs.readFile('404.html', function (err, data) {
-    response.statusCode = 404;
-    response.setHeader('content-type', 'text/html');
-    if (!err) response.write(data, 'utf8');
-    response.end();
-  });
+function return404(res) {
+  /*fs.readFile('404.html', function (err, data) {
+    res.statusCode = 404;
+    res.setHeader('content-type', 'text/html');
+    if (!err) res.write(data, 'utf8');
+    res.end();
+  });*/
+	res.setHeader('content-type', 'text/plain');
+	res.end('404! No such page or method.');
 }
 
 http.createServer(function(req, res) {
 	if (req.url == '/nbtjson') {
 		res.setHeader('content-type', 'application/json');
-		res.end(JSON.stringify(nbtobject));
+		if (nbtobject) res.end(JSON.stringify({success: true, data: nbtobject}));
+		else res.end(JSON.stringify({success: false, message: 'no data'}));
 	}
 	else if (req.url.substr(0, 7) == '/setnbt') {
 		var data = '';
-		req.on('data', function(chunk) {
-			data += chunk;
-			if (data.length > 1000000) {
-				res.setHeader('content-type', 'application/json');
-				res.end(JSON.stringify({success: false, message: 'data overload'}));
-			}
-		}).on('end', function() {
-			var success = false;
-			data = JSON.parse(data);
-			var paths = data.address.split('.');
-			var nbtcopy = nbtobject;
-			for (var i = 0; i < paths.length; i++) nbtcopy = nbtcopy.value[paths[i]];
-			if (nbtcopy.type == 'TAG_Compound') {
-				if (data.operation == 'addkey') {
-					nbtcopy.value[data.key] = {
-						type: data.type,
-						value: data.value
-					};
-					success = true;
+		if (nbtobject) {
+			req.on('data', function(chunk) {
+				data += chunk;
+				if (data.length > 1000000) {
+					res.setHeader('content-type', 'application/json');
+					res.end(JSON.stringify({success: false, message: 'data overload'}));
+					req.destroy();
 				}
-				if (data.operation == 'delete') {
-					delete nbtcopy.value[nbtcopy.key];
-					success = true;
+			}).on('end', function() {
+				var success = false;
+				data = JSON.parse(data);
+				var paths = data.address.split('.');
+				var nbtcopy = nbtobject;
+				for (var i = 0; i < paths.length; i++) nbtcopy = nbtcopy.value[paths[i]];
+				if (nbtcopy.type == 'TAG_Compound') {
+					if (data.operation == 'addkey') {
+						nbtcopy.value[data.key] = {
+							type: data.type,
+							value: data.value
+						};
+						success = true;
+					}
+					if (data.operation == 'delete') {
+						delete nbtcopy.value[nbtcopy.key];
+						success = true;
+					}
 				}
-			}
-			else if (nbtcopy.type == 'TAG_List') {
-				if (data.operation == 'addelements') {
-					if (data.index) nbtcopy.value.splice.apply([data.index, 0].concat(data.elements));
-					else nbtcpoy.value.splice.aply([nbtcopy.value.length - 1, 0].concat(data.elements));
-					success = true;
+				else if (nbtcopy.type == 'TAG_List') {
+					if (data.operation == 'addelements') {
+						if (data.index) nbtcopy.value.splice.apply([data.index, 0].concat(data.elements));
+						else nbtcpoy.value.splice.aply([nbtcopy.value.length - 1, 0].concat(data.elements));
+						success = true;
+					}
+					if (data.operation == 'setelements') {
+						for (i = 0; i < data.elements.length; i++) nbtcopy.value[data.index + i] = data.elements[i];
+						success = true;
+					}
 				}
-				if (data.operation == 'setelements') {
-					for (i = 0; i < data.elements.length; i++) nbtcopy.value[data.index + i] = data.elements[i];
-					success = true;
+				else {
+					if (data.operation == 'set') {
+						nbtcopy.value = data.value;
+						success = true;
+					}
 				}
-			}
-			else {
-				if (data.operation == 'set') {
-					nbtcopy.value = data.value;
-					success = true;
-				}
-			}
-		});
+			});
+		}
+		else {
+			res.setHeader('content-type', 'application/json');
+			res.end(JSON.stringify({success: false, message: 'no data'}));
+		}
 	}
 	else if (req.url == '/upload') {
 		var data = new Buffer(0);
@@ -366,6 +376,7 @@ http.createServer(function(req, res) {
 			if (data.length > 10000000) {
 				res.setHeader('content-type', 'application/json');
 				res.end(JSON.stringify({success: false, message: 'data overload'}));
+				req.destroy();
 			}
 		}).on('end', function() {
 			res.setHeader('content-type', 'application/json');
