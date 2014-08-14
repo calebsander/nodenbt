@@ -52,12 +52,8 @@
 			function FileSelectHandler(e) {
 				FileDragHover(e);
 				var files;
-				if (e.dataTransfer) {
-					if (e.dataTransfer.files) files = e.dataTransfer.files;
-				}
-				if (e.target) {
-					if (e.target.files) files = e.target.files;
-				}
+				if (e.dataTransfer && e.dataTransfer.files) files = e.dataTransfer.files;
+				if (e.target && e.target.files) files = e.target.files;
 				var reader;
 				reader = new FileReader();
 				reader.name = files[0].name;
@@ -86,15 +82,17 @@
 									success: (function() {
 										return function(server_response) {
 											if (!server_response.success) {
+												console.log(server_response);
 												$('div#loading').text('ERROR').addClass('error');
 												return;
 											}
+											$('a#download').attr('download', e.target.name).attr('href', '/download/' + e.target.name + '?gzip=' + String(gzip));
 											$('div#loading').text('Rendering...');
 											setTimeout(function() {
 												$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data)));
 												if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
 												$('div#nbt>ul>li>ul').show();
-												$('div#nbt>ul>li>ul>li>ul').show();
+												//$('div#nbt>ul>li>ul>li>ul').show();
 												$('img[src=\'/TAG_Byte_Array.ico\']').click(togglecontainer);
 												$('img[src=\'/TAG_List.ico\']').click(togglecontainer);
 												$('img[src=\'/TAG_Compound.ico\']').click(togglecontainer);
@@ -189,6 +187,12 @@
 						<li><div id = 'filedrag'>Drop file here</div></li>
 					</ul>
 				</li>
+				<li>
+					<a href = '#' id = 'download'>
+						Download
+					</a>
+				</li>
+			</ul>
 		</nav>
 		<div id = 'body'>
 			<div id = 'nbt'></div>

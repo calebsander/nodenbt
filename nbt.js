@@ -4,6 +4,7 @@ var util = require('util');
 var bn = require('./BigNumber.js');
 var http = require('http');
 var mime = require('mime');
+var url = require('url');
 
 var TAG_End = 0x00;
 var TAG_Byte = 0x01;
@@ -17,36 +18,9 @@ var TAG_String = 0x08;
 var TAG_List = 0x09;
 var TAG_Compound = 0x0A;
 var TAG_Int_Array = 0x0B;
-var nbt, nbtobject;
+var readnbt, nbtobject, writenbt;
 
 //READ NBT
-
-function readdat(filebuffer, res) {
-	zlib.gunzip(filebuffer, function(err, result) {
-		if (err) {
-			nbt = Buffer.concat([filebuffer, new Buffer([TAG_End])]);
-			try {
-				nbtobject = readCompound(0).value[''];
-				res.end(JSON.stringify({success: true, gzip: false}));
-			}
-			catch (error) {
-				console.log(error);
-				res.end(JSON.stringify({success: false, message: 'not dat or gzip'}));
-			}
-		}
-		else {
-			nbt = Buffer.concat([result, new Buffer([TAG_End])]);
-			try {
-				res.end(JSON.stringify({success: true, gzip: true}));
-				nbtobject = readCompound(0).value[''];
-			}
-			catch (error) {
-				console.log(error);
-				res.end(JSON.stringify({success: false, message: 'parse failed'}));
-			}
-		}
-	});
-}
 
 function readEnd(offset) {
 	return {
@@ -57,21 +31,21 @@ function readEnd(offset) {
 
 function readByte(offset) {
 	return {
-		value: nbt.readInt8(offset),
+		value: readnbt.readInt8(offset),
 		length: 1
 	};
 }
 
 function readShort(offset) {
 	return {
-		value: nbt.readInt16BE(offset),
+		value: readnbt.readInt16BE(offset),
 		length: 2
 	};
 }
 
 function readInt(offset) {
 	return {
-		value: nbt.readInt32BE(offset),
+		value: readnbt.readInt32BE(offset),
 		length: 4
 	};
 }
@@ -85,14 +59,14 @@ function readLong(offset) {
 
 function readFloat(offset) {
 	return {
-		value: nbt.readFloatBE(offset),
+		value: readnbt.readFloatBE(offset),
 		length: 4
 	};
 }
 
 function readDouble(offset) {
 	return {
-		value: nbt.readDoubleBE(offset),
+		value: readnbt.readDoubleBE(offset),
 		length: 8
 	};
 }
@@ -120,7 +94,7 @@ function readString(offset) {
 	var originaloffset = offset;
 	var bytesshort = readShort(offset);
 	offset += bytesshort.length;
-	var resultString = nbt.toString('utf8', offset, offset + bytesshort.value);
+	var resultString = readnbt.toString('utf8', offset, offset + bytesshort.value);
 	offset += bytesshort.value;
 	return {
 		value: resultString,
@@ -306,65 +280,62 @@ function readInt_Array(offset) {
 
 //WRITE NBT
 
-function writeEnd(value, offset) {
-	return {
-		length: 0
-	};
-}
+function writeEnd() {}
 
-function writeByte(value, offset) {
+function writeByte(value) {
 	if (value < -128 || value > 127) throw new Error('out of range: ' + String(value));
-	writenbt.writeInt8(value, offset);
-	return 1;
+	var bytebuffer = new Buffer(1);
+	bytebuffer.writeInt8(value, 0);
+	writenbt = Buffer.concat([writenbt, bytebuffer]);
 }
 
-function writeShort(value, offset) {
+function writeShort(value) {
 	if (value < -32768 || value > 32767) throw new Error('out of range: ' + String(value));
-	writenbt.writeInt16BE(value, offset);
-	return 2;
+	var shortbuffer = new Buffer(2);
+	shortbuffer.writeInt16BE(value, 0);
+	writenbt = Buffer.concat([writenbt, shortbuffer]);
 }
 
-function writeInt(value, offset) {
+function writeInt(value) {
 	if (value < -2147483648 || value > 2147483647) throw new Error('out of range: ' + String(value));
-	writenbt.writeInt32BE(value, offset);
-	return 4;
+	var intbuffer = new Buffer(4);
+	intbuffer.writeInt32BE(value, 0);
+	writenbt = Buffer.concat([writenbt, intbuffer]);
 }
 
-function writeLong(value, offset) {
+function writeLong(value) {
 	var bn = new BigNumber(value);
 	var bnb = bn.divide(4294967296);
 	if (bnb < -2147483648 || bnb > 2147483647) throw new Error('out of range: ' + value);
-	writeInt(Number(bnb.intPart()), offset);
-	writeInt(Number(bnb.mod(bn)), offset + 4);
-	return 8;
+	writeInt(Number(bnb.intPart()));
+	writeInt(Number(bn.mod(4294967296)));
 }
 
-function writeFloat(value, offset) { //probably needs range check
-	writenbt.writeFloatBE(value, offset);
-	return 4;
+function writeFloat(value) {
+	var floatbuffer = new Buffer(4);
+	floatbuffer.writeFloatBE(value, 0);
+	writenbt = Buffer.concat([writenbt, floatbuffer]);
 }
 
-function writeDouble(value, offset) { //probably needs range check
-	writenbt.writeDoubleBE(value, offset);
-	return 8;
+function writeDouble(value) {
+	var doublebuffer = new Buffer(8);
+	doublebuffer.writeDoubleBE(value, 0);
+	writenbt = Buffer.concat([writenbt, doublebuffer]);
 }
 
-function writeByte_Array(value, offset) {
-	var originaloffset = offset;
-	offset += writeInt(value.length, offset);
-	for (var i = 0; i < value.length; i++) offset += writeByte(value[i], offset);
-	return offset - originaloffset;
+function writeByte_Array(value) {
+	writeInt(value.length);
+	for (var i = 0; i < value.length; i++) writeByte(value[i]);
 }
 
-function writeString(value, offset) {
-	var originaloffset = offset;
-	offset += writeShort(value.length, offset);
-	offset += writenbt.write(value, offset);
-	return offset - originaloffset;
+function writeString(value) {
+	writeShort(value.length);
+	var stringbuffer = new Buffer(value.length);
+	stringbuffer.write(value, 0);
+	writenbt = Buffer.concat([writenbt, stringbuffer]);
 }
 
-function writeList(value, offset) {
-	var originaloffset = offset;
+function writeList(value) {
 	var writeFunction, writeType;
 	switch (value.type) {
 		case null:
@@ -418,90 +389,81 @@ function writeList(value, offset) {
 		default:
 			throw new Error('No such tag: ' + value.type);
 	}
-	offset += writeByte(writeType, offset);
+	writeByte(writeType);
 	
-	offset += writeInt(value.list.length, offset);
-	for (var i = 0; i < value.list.length; i++) offset += writeFunction(value.list[i], offset);
-	
-	return offset - originaloffset;
+	writeInt(value.list.length);
+	for (var i = 0; i < value.list.length; i++) writeFunction(value.list[i]);
 }
 
-function writeCompound(value, offset) {
-	var originaloffset = offset;
-	
-	var writeFunction;
+function writeCompound(value) {
 	for (var i in value) {
 		switch (value[i].type) {
 			case 'TAG_Byte':
-				offset += writeByte(TAG_Byte);
-				offset += writeString(i, offset);
-				offset += writeByte(value[i].value, offset);
+				writeByte(TAG_Byte);
+				writeString(i);
+				writeByte(value[i].value);
 				break;
 			case 'TAG_Short':
-				offset += writeByte(TAG_Short);
-				offset += writeString(i, offset);
-				offset += writeShort(value[i].value, offset);
+				writeByte(TAG_Short);
+				writeString(i);
+				writeShort(value[i].value);
 				break;
 			case 'TAG_Int':
-				offset += writeByte(TAG_Int);
-				offset += writeString(i, offset);
-				offset += writeInt(value[i].value, offset);
+				writeByte(TAG_Int);
+				writeString(i);
+				writeInt(value[i].value);
 				break;
 			case 'TAG_Long':
-				offset += writeByte(TAG_Long);
-				offset += writeString(i, offset);
-				offset += writeLong(value[i].value, offset);
+				writeByte(TAG_Long);
+				writeString(i);
+				writeLong(value[i].value);
 				break;
 			case 'TAG_Float':
-				offset += writeByte(TAG_Float);
-				offset += writeString(i, offset);
-				offset += writeFloat(value[i].value, offset);
+				writeByte(TAG_Float);
+				writeString(i);
+				writeFloat(value[i].value);
 				break;
 			case 'TAG_Double':
-				offset += writeByte(TAG_Double);
-				offset += writeString(i, offset);
-				offset += writeDouble(value[i].value, offset);
+				writeByte(TAG_Double);
+				writeString(i);
+				writeDouble(value[i].value);
 				break;
 			case 'TAG_Byte_Array':
-				offset += writeByte(TAG_Byte_Array);
-				offset += writeString(i, offset);
-				offset += writeByte_Array(value[i].value, offset);
+				writeByte(TAG_Byte_Array);
+				writeString(i);
+				writeByte_Array(value[i].value);
 				break;
 			case 'TAG_String':
-				offset += writeByte(TAG_String);
-				offset += writeString(i, offset);
-				offset += writeString(value[i].value, offset);
+				writeByte(TAG_String);
+				writeString(i);
+				writeString(value[i].value);
 				break;
 			case 'TAG_List':
-				offset += writeByte(TAG_List);
-				offset += writeString(i, offset);
-				offset += writeList(value[i].value, offset);
+				writeByte(TAG_List);
+				writeString(i);
+				writeList(value[i].value);
 				break;
 			case 'TAG_Compound':
-				offset += writeByte(TAG_Compound);
-				offset += writeString(i, offset);
-				offset += writeCompound(value[i].value, offset);
+				writeByte(TAG_Compound);
+				writeString(i);
+				writeCompound(value[i].value);
 				break;
 			case 'TAG_Int_Array':
-				offset += writeByte(TAG_Int_Array);
-				offset += writeString(i, offset);
-				offset += writeInt_Array(value[i].value, offset);
+				writeByte(TAG_Int_Array);
+				writeString(i);
+				writeInt_Array(value[i].value);
 				break;
 			default:
-				throw new Error('No such tag: ' + value.type);
+				throw new Error('No such tag: ' + value[i].type);
 		}
 	}
 	
-	offset += writeByte(TAG_End, offset);
-	
-	return offset - originaloffset;
+	writeByte(TAG_End);
 }
 
-function writeInt_Array(value, offset) {
-	var originaloffset = offset;
-	offset += writeInt(value.length, offset);
-	for (var i = 0; i < value.length; i++) offset += writeInt(value[i], offset);
-	return offset - originaloffset;
+function writeInt_Array(value) {
+	writeInt(value.length);
+	for (var i = 0; i < value.length; i++) writeInt(value[i]);
 }
 
 //HTTP SERVER
@@ -549,8 +511,59 @@ http.createServer(function(req, res) {
 			}
 		}).on('end', function() {
 			res.setHeader('content-type', 'application/json');
-			readdat(data, res);
+			zlib.gunzip(data, function(err, result) {
+				if (err) {
+					readnbt = Buffer.concat([filebuffer, new Buffer([TAG_End])]);
+					try {
+						nbtobject = readCompound(0).value[''];
+						res.end(JSON.stringify({success: true, gzip: false}));
+					}
+					catch (error) {
+						console.log(error);
+						res.end(JSON.stringify({success: false, message: 'not dat or gzip'}));
+					}
+				}
+				else {
+					readnbt = Buffer.concat([result, new Buffer([TAG_End])]);
+					try {
+						res.end(JSON.stringify({success: true, gzip: true}));
+						nbtobject = readCompound(0).value[''];
+					}
+					catch (error) {
+						console.log(error);
+						res.end(JSON.stringify({success: false, message: 'parse failed'}));
+					}
+				}
+			});
 		});
+	}
+	else if (req.url.substring(0, 10) == '/download/') {
+		var gzip = url.parse(req.url, true).query.gzip == 'true';
+		writenbt = new Buffer(0);
+		if (gzip) {
+			try {
+				writeCompound({'': nbtobject}, 0);
+				zlib.gzip(writenbt, function(err, result) {
+					res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1, req.url.length)));
+					res.end(result);
+				});
+			}
+			catch (error) {
+				console.log(error);
+				req.destroy(); //sending JSON will screw up the user, better to send nothing
+			}
+		}
+		else {
+			try {
+				writeCompound({'': nbtobject}, 0);
+				res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1, req.url.length)));
+				res.end(result);
+			}
+			catch (error) {
+				console.log(error);
+				req.destroy(); //sending JSON will screw up the user, better to send nothing
+			}
+		}
 	}
 	else {
 		var filename = './files' + req.url;
@@ -571,8 +584,8 @@ http.createServer(function(req, res) {
 						fs.readFile(filename, function(err, data) {
 							if (err) return404(res);
 							else {
-								var extension = filename.substr(filename.lastIndexOf('.') + 1, filename.length);
-								res.setHeader('content-type', mime[extension]);
+								var extension = filename.substring(filename.lastIndexOf('.') + 1, filename.length);
+								res.setHeader('content-type', mime.lookup(extension));
 								res.end(data);
 							}
 						});
@@ -580,8 +593,8 @@ http.createServer(function(req, res) {
 					else return404(res);
 				}
 				else {
-					var extension = filename.substr(filename.lastIndexOf('.') + 1, filename.length);
-					res.setHeader('content-type', mime[extension]);
+					var extension = filename.substring(filename.lastIndexOf('.') + 1, filename.length);
+					res.setHeader('content-type', mime.lookup(extension));
 					res.end(data);
 				}
 			});
@@ -590,8 +603,8 @@ http.createServer(function(req, res) {
 			fs.readFile(filename, function(err, data) {
 				if (err) return404(res);
 				else {
-					var extension = filename.substr(filename.lastIndexOf('.') + 1, filename.length);
-					res.setHeader('content-type', mime[extension]);
+					var extension = filename.substring(filename.lastIndexOf('.') + 1, filename.length);
+					res.setHeader('content-type', mime.lookup(extension));
 					res.end(data);
 				}
 			});
