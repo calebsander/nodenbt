@@ -70,3 +70,34 @@ div#nbt {
 div.nbtcontainer {
   padding-left:12px;
 }
+div#nbt ul {
+  padding-start:0px;
+  -webkit-padding-start:0px;
+}
+div#nbt li {
+  position:relative;
+  margin:0px;
+  padding:0px;
+  margin-left:7px;
+  border-left:1px solid black;
+  display:table;
+  list-style-type:none;
+  list-style-image:none;
+  padding-left:14px;
+}
+div#nbt li:last-child {
+  border:0px;
+}
+div#nbt li:before {
+  content:"";
+  position:absolute;
+  top:0px;
+  left:0px;
+  width:11px;
+  height:11px;
+  border-bottom:1px solid black;
+}
+div#nbt li:last-child:before {
+  border-left: 1px solid black;
+  width:10px;
+}

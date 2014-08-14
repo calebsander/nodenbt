@@ -19,7 +19,7 @@ var TAG_Compound = 0x0A;
 var TAG_Int_Array = 0x0B;
 
 var nbt, nbtobject;
-function processdat(filebuffer, res) {
+function readdat(filebuffer, res) {
 	zlib.gunzip(filebuffer, function(err, result) {
 		if (err) {
 			nbt = Buffer.concat([filebuffer, new Buffer([TAG_End])]);
@@ -264,10 +264,13 @@ function readCompound(offset) {
 			default:
 				throw new Error('No such tag: ' + String(typebyte.value));
 		}
-		Compound[readName.value] = {
-			type: readType,
-			value: readValue.value
-		};
+		if (Compound[readName.value]) throw new Error('Tag ' + readName.value + ' already exists');
+		else {
+			Compound[readName.value] = {
+				type: readType,
+				value: readValue.value
+			};
+		}
 		offset += readValue.length;
 		
 		typebyte = readByte(offset);
@@ -300,15 +303,17 @@ function readInt_Array(offset) {
 }
 
 function return404(res) {
-  /*fs.readFile('404.html', function (err, data) {
-    res.statusCode = 404;
-    res.setHeader('content-type', 'text/html');
-    if (!err) res.write(data, 'utf8');
-    res.end();
-  });*/
+	/*fs.readFile('404.html', function (err, data) {
+		res.statusCode = 404;
+		res.setHeader('content-type', 'text/html');
+		if (!err) res.write(data, 'utf8');
+		res.end();
+	});*/
 	res.setHeader('content-type', 'text/plain');
 	res.end('404! No such page or method.');
 }
+
+//HTTP SERVER
 
 http.createServer(function(req, res) {
 	if (req.url == '/nbtjson') {
@@ -327,41 +332,9 @@ http.createServer(function(req, res) {
 					req.destroy();
 				}
 			}).on('end', function() {
-				var success = false;
-				data = JSON.parse(data);
-				var paths = data.address.split('.');
-				var nbtcopy = nbtobject;
-				for (var i = 0; i < paths.length; i++) nbtcopy = nbtcopy.value[paths[i]];
-				if (nbtcopy.type == 'TAG_Compound') {
-					if (data.operation == 'addkey') {
-						nbtcopy.value[data.key] = {
-							type: data.type,
-							value: data.value
-						};
-						success = true;
-					}
-					if (data.operation == 'delete') {
-						delete nbtcopy.value[nbtcopy.key];
-						success = true;
-					}
-				}
-				else if (nbtcopy.type == 'TAG_List') {
-					if (data.operation == 'addelements') {
-						if (data.index) nbtcopy.value.splice.apply([data.index, 0].concat(data.elements));
-						else nbtcpoy.value.splice.aply([nbtcopy.value.length - 1, 0].concat(data.elements));
-						success = true;
-					}
-					if (data.operation == 'setelements') {
-						for (i = 0; i < data.elements.length; i++) nbtcopy.value[data.index + i] = data.elements[i];
-						success = true;
-					}
-				}
-				else {
-					if (data.operation == 'set') {
-						nbtcopy.value = data.value;
-						success = true;
-					}
-				}
+				nbtobject = JSON.parse(data);
+				res.setHeader('content-type', 'application/json');
+				res.end(JSON.stringify({success: true}));
 			});
 		}
 		else {
@@ -380,52 +353,52 @@ http.createServer(function(req, res) {
 			}
 		}).on('end', function() {
 			res.setHeader('content-type', 'application/json');
-			processdat(data, res);
+			readdat(data, res);
 		});
 	}
 	else {
 		var filename = './files' + req.url;
-	  if (filename.indexOf('..') > -1) return404(res);
-	  else if (filename.lastIndexOf('.') == 0) {
-	    if (filename[filename.length - 1] == '/') {
-	      var tryfile = false;
-	      filename += 'index.html';
-	    }
-	    else {
-	      filename += '/index.html';
-	      var tryfile = true;
-	    }
-	    fs.readFile(filename, function(err, data) {
-	      if (err) {
-	        if (tryfile) {
-	          filename = filename.substr(0, filename.length - 11) + '.html';
-	          fs.readFile(filename, function(err, data) {
-	            if (err) return404(res);
-	            else {
-	              var extension = filename.substr(filename.lastIndexOf('.') + 1, filename.length);
-	              res.setHeader('content-type', mime[extension]);
-	              res.end(data);
-	            }
-	          });
-	        }
-	        else return404(res);
-	      }
-	      else {
-	        var extension = filename.substr(filename.lastIndexOf('.') + 1, filename.length);
-	        res.setHeader('content-type', mime[extension]);
-	        res.end(data);
-	      }
-	    });
-	  }
-	  else {
-	    fs.readFile(filename, function(err, data) {
-	      if (err) return404(res);
-	      else {
-	        var extension = filename.substr(filename.lastIndexOf('.') + 1, filename.length);
-	        res.setHeader('content-type', mime[extension]);
-	        res.end(data);
-	      }
-	    });
-	  }
+		if (filename.indexOf('..') > -1) return404(res);
+		else if (filename.lastIndexOf('.') == 0) {
+			if (filename[filename.length - 1] == '/') {
+				var tryfile = false;
+				filename += 'index.html';
+			}
+			else {
+				filename += '/index.html';
+				var tryfile = true;
+			}
+			fs.readFile(filename, function(err, data) {
+				if (err) {
+					if (tryfile) {
+						filename = filename.substr(0, filename.length - 11) + '.html';
+						fs.readFile(filename, function(err, data) {
+							if (err) return404(res);
+							else {
+								var extension = filename.substr(filename.lastIndexOf('.') + 1, filename.length);
+								res.setHeader('content-type', mime[extension]);
+								res.end(data);
+							}
+						});
+					}
+					else return404(res);
+				}
+				else {
+					var extension = filename.substr(filename.lastIndexOf('.') + 1, filename.length);
+					res.setHeader('content-type', mime[extension]);
+					res.end(data);
+				}
+			});
+		}
+		else {
+			fs.readFile(filename, function(err, data) {
+				if (err) return404(res);
+				else {
+					var extension = filename.substr(filename.lastIndexOf('.') + 1, filename.length);
+					res.setHeader('content-type', mime[extension]);
+					res.end(data);
+				}
+			});
+		}
 	}
 }).listen(8080);
