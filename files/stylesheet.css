@@ -51,21 +51,21 @@ div#filedrag.hover {
 }
 div#body {
   position:absolute;
-  top:75px;
+  top:0px;
   left:0px;
   right:0px;
   bottom:0px;
   z-index:0;
   font-size:12;
   color:#000;
+  overflow:auto;
 }
 div#nbt {
   position:absolute;
-  top:0px;
+  top:75px;
   left:50px;
   right:0px;
   bottom:0px;
-  overflow:auto;
 }
 div.nbtcontainer {
   padding-left:12px;
@@ -100,4 +100,9 @@ div#nbt li:before {
 div#nbt li:last-child:before {
   border-left: 1px solid black;
   width:10px;
+}
+div.error {
+  font-family:monospace;
+  font-size:40;
+  color:#e74c3c;
 }

@@ -63,6 +63,8 @@
 				reader.name = files[0].name;
 				reader.type = files[0].type;
 				reader.onload = function(e) {
+					$('div#nbt').children().remove();
+					$('div#nbt').prepend($('<div>').attr('id', 'loading').text('Parsing...'));
 					$.ajax({
 						url: '/upload',
 						type: 'POST',
@@ -74,14 +76,21 @@
 								console.log(server_response);
 								gzip = server_response.gzip;
 								$('li#open').removeClass('open');
-								if (server_response.success) {
-									$.ajax({
-										url: '/nbtjson',
-										dataType: 'json',
-										success: (function() {
-											return function(server_response) {
-												if (!server_response.success) return;
-												$('div#nbt').children().remove();
+								if (!server_response.success) {
+									$('div#loading').text('COULD NOT PARSE').addClass('error');
+									return;
+								}
+								$.ajax({
+									url: '/nbtjson',
+									dataType: 'json',
+									success: (function() {
+										return function(server_response) {
+											if (!server_response.success) {
+												$('div#loading').text('ERROR').addClass('error');
+												return;
+											}
+											$('div#loading').text('Rendering...');
+											setTimeout(function() {
 												$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data)));
 												if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
 												$('div#nbt>ul>li>ul').show();
@@ -90,10 +99,11 @@
 												$('img[src=\'/TAG_List.ico\']').click(togglecontainer);
 												$('img[src=\'/TAG_Compound.ico\']').click(togglecontainer);
 												$('img[src=\'/TAG_Int_Array.ico\']').click(togglecontainer);
-											}
-										}())
-									});
-								}
+												$('div#loading').remove();
+											}, 100);
+										}
+									}())
+								});
 							}
 						}())
 					});
