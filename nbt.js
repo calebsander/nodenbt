@@ -17,14 +17,16 @@ var TAG_String = 0x08;
 var TAG_List = 0x09;
 var TAG_Compound = 0x0A;
 var TAG_Int_Array = 0x0B;
-
 var nbt, nbtobject;
+
+//READ NBT
+
 function readdat(filebuffer, res) {
 	zlib.gunzip(filebuffer, function(err, result) {
 		if (err) {
 			nbt = Buffer.concat([filebuffer, new Buffer([TAG_End])]);
 			try {
-				console.log(util.inspect(nbtobject = readCompound(0).value[''], false, null));
+				nbtobject = readCompound(0).value[''];
 				res.end(JSON.stringify({success: true, gzip: false}));
 			}
 			catch (error) {
@@ -36,7 +38,7 @@ function readdat(filebuffer, res) {
 			nbt = Buffer.concat([result, new Buffer([TAG_End])]);
 			try {
 				res.end(JSON.stringify({success: true, gzip: true}));
-				console.log(util.inspect(nbtobject = readCompound(0).value[''], false, null));
+				nbtobject = readCompound(0).value[''];
 			}
 			catch (error) {
 				console.log(error);
@@ -76,7 +78,7 @@ function readInt(offset) {
 
 function readLong(offset) {
 	return {
-		value: String(new bn(nbt.readInt32BE(offset)).multiply(4294967296).add(nbt.readInt32BE(offset + 4))),
+		value: String(new bn(readInt(offset)).multiply(4294967296).add(readInt(offset + 4))),
 		length: 8
 	};
 }
@@ -302,18 +304,212 @@ function readInt_Array(offset) {
 	};
 }
 
-function return404(res) {
-	/*fs.readFile('404.html', function (err, data) {
-		res.statusCode = 404;
-		res.setHeader('content-type', 'text/html');
-		if (!err) res.write(data, 'utf8');
-		res.end();
-	});*/
-	res.setHeader('content-type', 'text/plain');
-	res.end('404! No such page or method.');
+//WRITE NBT
+
+function writeEnd(value, offset) {
+	return {
+		length: 0
+	};
+}
+
+function writeByte(value, offset) {
+	if (value < -128 || value > 127) throw new Error('out of range: ' + String(value));
+	writenbt.writeInt8(value, offset);
+	return 1;
+}
+
+function writeShort(value, offset) {
+	if (value < -32768 || value > 32767) throw new Error('out of range: ' + String(value));
+	writenbt.writeInt16BE(value, offset);
+	return 2;
+}
+
+function writeInt(value, offset) {
+	if (value < -2147483648 || value > 2147483647) throw new Error('out of range: ' + String(value));
+	writenbt.writeInt32BE(value, offset);
+	return 4;
+}
+
+function writeLong(value, offset) {
+	var bn = new BigNumber(value);
+	var bnb = bn.divide(4294967296);
+	if (bnb < -2147483648 || bnb > 2147483647) throw new Error('out of range: ' + value);
+	writeInt(Number(bnb.intPart()), offset);
+	writeInt(Number(bnb.mod(bn)), offset + 4);
+	return 8;
+}
+
+function writeFloat(value, offset) { //probably needs range check
+	writenbt.writeFloatBE(value, offset);
+	return 4;
+}
+
+function writeDouble(value, offset) { //probably needs range check
+	writenbt.writeDoubleBE(value, offset);
+	return 8;
+}
+
+function writeByte_Array(value, offset) {
+	var originaloffset = offset;
+	offset += writeInt(value.length, offset);
+	for (var i = 0; i < value.length; i++) offset += writeByte(value[i], offset);
+	return offset - originaloffset;
+}
+
+function writeString(value, offset) {
+	var originaloffset = offset;
+	offset += writeShort(value.length, offset);
+	offset += writenbt.write(value, offset);
+	return offset - originaloffset;
+}
+
+function writeList(value, offset) {
+	var originaloffset = offset;
+	var writeFunction, writeType;
+	switch (value.type) {
+		case null:
+			writeFunction = writeEnd;
+			writeType = TAG_End;
+			break;
+		case 'TAG_Byte':
+			writeFunction = writeByte;
+			writeType = TAG_Byte;
+			break;
+		case 'TAG_Short':
+			writeFunction = writeShort;
+			writeType = TAG_Short;
+			break;
+		case 'TAG_Int':
+			writeFunction = writeInt;
+			writeType = TAG_Int;
+			break;
+		case 'TAG_Long':
+			writeFunction = writeLong;
+			writeType = TAG_Long;
+			break;
+		case 'TAG_Float':
+			writeFunction = writeFloat;
+			writeType = TAG_Float;
+			break;
+		case 'TAG_Double':
+			writeFunction = writeDouble;
+			writeType = TAG_Double;
+			break;
+		case 'TAG_Byte_Array':
+			writeFunction = writeByte_Array;
+			writeType = TAG_Byte_Array;
+			break;
+		case 'TAG_String':
+			writeFunction = writeString;
+			writeType = TAG_String;
+			break;
+		case 'TAG_List':
+			writeFunction = writeList;
+			writeType = TAG_List;
+			break;
+		case 'TAG_Compound':
+			writeFunction = writeCompound;
+			writeType = TAG_Compound;
+			break;
+		case 'TAG_Int_Array':
+			writeFunction = writeInt_Array;
+			writeType = TAG_Int_Array;
+			break;
+		default:
+			throw new Error('No such tag: ' + value.type);
+	}
+	offset += writeByte(writeType, offset);
+	
+	offset += writeInt(value.list.length, offset);
+	for (var i = 0; i < value.list.length; i++) offset += writeFunction(value.list[i], offset);
+	
+	return offset - originaloffset;
+}
+
+function writeCompound(value, offset) {
+	var originaloffset = offset;
+	
+	var writeFunction;
+	for (var i in value) {
+		switch (value[i].type) {
+			case 'TAG_Byte':
+				offset += writeByte(TAG_Byte);
+				offset += writeString(i, offset);
+				offset += writeByte(value[i].value, offset);
+				break;
+			case 'TAG_Short':
+				offset += writeByte(TAG_Short);
+				offset += writeString(i, offset);
+				offset += writeShort(value[i].value, offset);
+				break;
+			case 'TAG_Int':
+				offset += writeByte(TAG_Int);
+				offset += writeString(i, offset);
+				offset += writeInt(value[i].value, offset);
+				break;
+			case 'TAG_Long':
+				offset += writeByte(TAG_Long);
+				offset += writeString(i, offset);
+				offset += writeLong(value[i].value, offset);
+				break;
+			case 'TAG_Float':
+				offset += writeByte(TAG_Float);
+				offset += writeString(i, offset);
+				offset += writeFloat(value[i].value, offset);
+				break;
+			case 'TAG_Double':
+				offset += writeByte(TAG_Double);
+				offset += writeString(i, offset);
+				offset += writeDouble(value[i].value, offset);
+				break;
+			case 'TAG_Byte_Array':
+				offset += writeByte(TAG_Byte_Array);
+				offset += writeString(i, offset);
+				offset += writeByte_Array(value[i].value, offset);
+				break;
+			case 'TAG_String':
+				offset += writeByte(TAG_String);
+				offset += writeString(i, offset);
+				offset += writeString(value[i].value, offset);
+				break;
+			case 'TAG_List':
+				offset += writeByte(TAG_List);
+				offset += writeString(i, offset);
+				offset += writeList(value[i].value, offset);
+				break;
+			case 'TAG_Compound':
+				offset += writeByte(TAG_Compound);
+				offset += writeString(i, offset);
+				offset += writeCompound(value[i].value, offset);
+				break;
+			case 'TAG_Int_Array':
+				offset += writeByte(TAG_Int_Array);
+				offset += writeString(i, offset);
+				offset += writeInt_Array(value[i].value, offset);
+				break;
+			default:
+				throw new Error('No such tag: ' + value.type);
+		}
+	}
+	
+	offset += writeByte(TAG_End, offset);
+	
+	return offset - originaloffset;
+}
+
+function writeInt_Array(value, offset) {
+	var originaloffset = offset;
+	offset += writeInt(value.length, offset);
+	for (var i = 0; i < value.length; i++) offset += writeInt(value[i], offset);
+	return offset - originaloffset;
 }
 
 //HTTP SERVER
+
+function return404(res) {
+	res.setHeader('content-type', 'text/plain');
+	res.end('404! No such page or method.');
+}
 
 http.createServer(function(req, res) {
 	if (req.url == '/nbtjson') {
