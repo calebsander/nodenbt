@@ -7,6 +7,8 @@
 		<link type = 'text/css' href = '/stylesheet.css' rel = 'stylesheet' />
 		<script src = '/jquery.js'></script>
 		<script src = '/js/bootstrap.min.js'></script>
+		<script src = '/ace/ace.js' charset = 'utf-8'></script>
+		<script src = '/BigNumber.js'></script>
 		<script>
 			$.ajaxTransport('+*', function(options, originalOptions, jqXHR) {
 				if (window.FormData && ((options.dataType && (options.dataType == 'blob' || options.dataType == 'arraybuffer')) || (options.data && ((window.Blob && options.data instanceof Blob) || (window.ArrayBuffer && options.data instanceof ArrayBuffer))))) {
@@ -69,7 +71,6 @@
 						processData: false,
 						success: (function() {
 							return function(server_response) {
-								console.log(server_response);
 								gzip = server_response.gzip;
 								$('li#open').removeClass('open');
 								if (!server_response.success) {
@@ -82,17 +83,16 @@
 									success: (function() {
 										return function(server_response) {
 											if (!server_response.success) {
-												console.log(server_response);
 												$('div#loading').text('ERROR').addClass('error');
 												return;
 											}
 											$('a#download').attr('download', e.target.name).attr('href', '/download/' + e.target.name + '?gzip=' + String(gzip));
+											$('div#editor').hide();
 											$('div#loading').text('Rendering...');
 											setTimeout(function() {
 												$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data)));
 												if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
 												$('div#nbt>ul>li>ul').show();
-												//$('div#nbt>ul>li>ul>li>ul').show();
 												$('img[src=\'/TAG_Byte_Array.ico\']').click(togglecontainer);
 												$('img[src=\'/TAG_List.ico\']').click(togglecontainer);
 												$('img[src=\'/TAG_Compound.ico\']').click(togglecontainer);
@@ -109,55 +109,193 @@
 				reader.readAsArrayBuffer(files[0]);
 			}
 			
+			var editimg, editor, savetag, editororig;
+			function edit() {
+				var parent = $(this).parent();
+				if (parent.is('span')) parent = parent.parent();
+				var imgsrc = parent.children('img:not(.edit)').attr('src');
+				var key = parent.attr('key');
+				savetag = parent.children('span');
+				$('div#editor h3.panel-title').children(':not(button)').remove();
+				switch (imgsrc) {
+					case '/TAG_Byte.ico':
+						if (key) {
+							editororig = parent.children('span').text().substring(key.length + 2);
+							editor.setValue(parent.children('span').text().substring(key.length + 2));
+							$('div#editor h3.panel-title').text('Editing ' + key);
+						}
+						else {
+							editororig = parent.children('span').text();
+							editor.setValue(parent.children('span').text());
+							$('div#editor h3.panel-title').text('Editing TAG_Byte');
+						}
+						break;
+					case '/TAG_Short.ico':
+						if (key) {
+							editororig = parent.children('span').text().substring(key.length + 2);
+							editor.setValue(parent.children('span').text().substring(key.length + 2));
+							$('div#editor h3.panel-title').text('Editing ' + key);
+						}
+						else {
+							editororig = parent.children('span').text();
+							editor.setValue(parent.children('span').text());
+							$('div#editor h3.panel-title').text('Editing TAG_Short');
+						}
+						break;
+					case '/TAG_Int.ico':
+						if (key) {
+							editororig = parent.children('span').text().substring(key.length + 2);
+							editor.setValue(parent.children('span').text().substring(key.length + 2));
+							$('div#editor h3.panel-title').text('Editing ' + key);
+						}
+						else {
+							editororig = parent.children('span').text();
+							editor.setValue(parent.children('span').text());
+							$('div#editor h3.panel-title').text('Editing TAG_Int');
+						}
+						break;
+					case '/TAG_Long.ico':
+						if (key) {
+							editororig = parent.children('span').text().substring(key.length + 2);
+							editor.setValue(parent.children('span').text().substring(key.length + 2));
+							$('div#editor h3.panel-title').text('Editing ' + key);
+						}
+						else {
+							editororig = parent.children('span').text();
+							editor.setValue(parent.children('span').text());
+							$('div#editor h3.panel-title').text('Editing TAG_Long');
+						}
+						break;
+					case '/TAG_Float.ico':
+						if (key) {
+							editororig = parent.children('span').text().substring(key.length + 2);
+							editor.setValue(parent.children('span').text().substring(key.length + 2));
+							$('div#editor h3.panel-title').text('Editing ' + key);
+						}
+						else {
+							editororig = parent.children('span').text();
+							editor.setValue(parent.children('span').text());
+							$('div#editor h3.panel-title').text('Editing TAG_Float');
+						}
+						break;
+					case '/TAG_Double.ico':
+						if (key) {
+							editororig = parent.children('span').text().substring(key.length + 2);
+							editor.setValue(parent.children('span').text().substring(key.length + 2));
+							$('div#editor h3.panel-title').text('Editing ' + key);
+						}
+						else {
+							editororig = parent.children('span').text();
+							editor.setValue(parent.children('span').text());
+							$('div#editor h3.panel-title').text('Editing TAG_Double');
+						}
+						break;
+					case '/TAG_Byte_Array.ico':
+						var editorvalue = '';
+						var elements = parent.children('ul').children();
+						for (var i = 0; i < elements.length; i++) editorvalue += elements.eq(i).text() + '\n';
+						editorvalue = editorvalue.substring(0, editorvalue.length - 1);
+						if (key) {
+							editororig = editorvalue;
+							editor.setValue(editorvalue);
+							$('div#editor h3.panel-title').text('Editing ' + key);
+						}
+						else {
+							editororig = editorvalue;
+							editor.setValue(editorvalue);
+							$('div#editor h3.panel-title').text('Editing TAG_Byte_Array');
+						}
+						break;
+					case '/TAG_String.ico':
+						if (key) {
+							editororig = parent.children('span').text().substring(key.length + 3, parent.children('span').text().length - 1);
+							editor.setValue(parent.children('span').text().substring(key.length + 3, parent.children('span').text().length - 1));
+							$('div#editor h3.panel-title').text('Editing ' + key);
+						}
+						else {
+							editororig = parent.children('span').text().substring(1, parent.children('span').text().length - 1);
+							editor.setValue(parent.children('span').text()).substring(1, parent.children('span').text().length - 1);
+							$('div#editor h3.panel-title').text('Editing TAG_Double');
+						}
+						break;
+					case '/TAG_Int_Array.ico':
+						var editorvalue = '';
+						var elements = parent.children('ul').children();
+						for (var i = 0; i < elements.length; i++) editorvalue += elements.eq(i).text() + '\n';
+						editorvalue = editorvalue.substring(0, editorvalue.length - 1);
+						if (key) {
+							editororig = editorvalue;
+							editor.setValue(editorvalue);
+							$('div#editor h3.panel-title').text('Editing ' + key);
+						}
+						else {
+							editororig = editorvalue;
+							editor.setValue(editorvalue);
+							$('div#editor h3.panel-title').text('Editing TAG_Int_Array');
+						}
+						break;
+				}
+				$('div#editor').show();
+			}
+			function showedit() {
+				var notlastedit = !$(this).is(editimg) && !$(this).children('img.edit').is(editimg);
+				if (notlastedit) {
+					if (editimg) editimg.remove();
+					editimg = $('<img>').addClass('edit').attr('src', 'edit.ico').click(edit);
+					if ($(this).is('img')) $(this).after(editimg);
+					else $(this).append(editimg);
+				}
+			}
+			function save() {
+				$(this).removeClass('btn-info');
+				$('div#editor').hide();
+			}
+			
 			function renderJSON(data, key) {
 				var display = $('<li>').addClass('tag');
 				switch (data.type) {
 					case 'TAG_Byte':
-						if (key) return display.append($('<img>').attr('src', '/TAG_Byte.ico')).append($('<span>').text(key + ': ' + String(data.value)));
-						else return display.append($('<img>').attr('src', '/TAG_Byte.ico')).append($('<span>').text(String(data.value)));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_Byte.ico')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(showedit));
+						else return display.append($('<img>').attr('src', '/TAG_Byte.ico')).append($('<span>').text(String(data.value)).mouseover(showedit));
 					case 'TAG_Short':
-						if (key) return display.append($('<img>').attr('src', '/TAG_Short.ico')).append($('<span>').text(key + ': ' + String(data.value)));
-						else return display.append($('<img>').attr('src', '/TAG_Short.ico')).append($('<span>').text(String(data.value)));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_Short.ico')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(showedit));
+						else return display.append($('<img>').attr('src', '/TAG_Short.ico')).append($('<span>').text(String(data.value)).mouseover(showedit));
 					case 'TAG_Int':
-						if (key) return display.append($('<img>').attr('src', '/TAG_Int.ico')).append($('<span>').text(key + ': ' + String(data.value)));
-						else return display.append($('<img>').attr('src', '/TAG_Int.ico')).append($('<span>').text(String(data.value)));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_Int.ico')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(showedit));
+						else return display.append($('<img>').attr('src', '/TAG_Int.ico')).append($('<span>').text(String(data.value)).mouseover(showedit));
 					case 'TAG_Long':
-						if (key) return display.append($('<img>').attr('src', '/TAG_Long.ico')).append($('<span>').text(key + ': ' + data.value));
-						else return display.append($('<img>').attr('src', '/TAG_Long.ico')).append($('<span>').text(data.value));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_Long.ico')).append($('<span>').text(key + ': ' + data.value).mouseover(showedit));
+						else return display.append($('<img>').attr('src', '/TAG_Long.ico')).append($('<span>').text(data.value).mouseover(showedit));
 					case 'TAG_Float':
-						if (key) return display.append($('<img>').attr('src', '/TAG_Float.ico')).append($('<span>').text(key + ': ' + String(data.value)));
-						else return display.append($('<img>').attr('src', '/TAG_Float.ico')).append($('<span>').text(String(data.value)));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_Float.ico')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(showedit));
+						else return display.append($('<img>').attr('src', '/TAG_Float.ico')).append($('<span>').text(String(data.value)).mouseover(showedit));
 					case 'TAG_Double':
-						if (key) return display.append($('<img>').attr('src', '/TAG_Double.ico')).append($('<span>').text(key + ': ' + String(data.value)));
-						else return display.append($('<img>').attr('src', '/TAG_Double.ico')).append($('<span>').text(String(data.value)));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_Double.ico')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(showedit));
+						else return display.append($('<img>').attr('src', '/TAG_Double.ico')).append($('<span>').text(String(data.value)).mouseover(showedit));
 					case 'TAG_Byte_Array':
 						var container = $('<ul>').addClass('nbtcontainer').hide();
-						for (var i = 0; i < data.value.length; i++) container.append($('<li>').text(String(data.value[i])));
-						if (key) return display.append($('<img>').attr('src', '/TAG_Byte_Array.ico')).append($('<span>').text(key + ':')).append(container);
-						else return display.append($('<img>').attr('src', '/TAG_Byte_Array.ico')).append(container);
+						for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Byte', value: data.value[i]}));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_Byte_Array.ico')).append($('<span>').text(key + ':').mouseover(showedit)).append(container);
+						else return display.append($('<img>').attr('src', '/TAG_Byte_Array.ico').mouseover(showedit)).append(container);
 					case 'TAG_String':
-						if (key) return display.append($('<img>').attr('src', '/TAG_String.ico')).append($('<span>').text(key + ': ' + '"' + data.value + '"'));
-						else return display.append($('<img>').attr('src', '/TAG_String.ico')).append($('<span>').text(data.value));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_String.ico')).append($('<span>').text(key + ': ' + '"' + data.value + '"').mouseover(showedit));
+						else return display.append($('<img>').attr('src', '/TAG_String.ico')).append($('<span>').text('"' + data.value + '"').mouseover(showedit));
 					case 'TAG_List':
 						var container = $('<ul>').addClass('nbtcontainer').hide();
 						var element = {};
-						for (var i = 0; i < data.value.list.length; i++) {
-							element.value = $.extend(true, {}, data.value.list[i]);
-							element.type = data.value.type;
-							container.append(renderJSON(element));
-						}
-						if (key) return display.append($('<img>').attr('src', '/TAG_List.ico')).append($('<span>').text(key + ':')).append(container);
+						for (var i = 0; i < data.value.list.length; i++) container.append(renderJSON({type: data.value.type, value: data.value.list[i]}));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_List.ico')).append($('<span>').text(key + ':')).append(container);
 						else return display.append($('<img>').attr('src', '/' + data.value.type + '.ico')).append(container);
 					case 'TAG_Compound':
 						var container = $('<ul>').addClass('nbtcontainer').hide();
 						for (var i in data.value) container.append(renderJSON(data.value[i], i));
-						if (key) return display.append($('<img>').attr('src', '/TAG_Compound.ico')).append($('<span>').text(key + ':')).append(container);
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_Compound.ico')).append($('<span>').text(key + ':')).append(container);
 						else return display.append($('<img>').attr('src', '/TAG_Compound.ico')).append(container);
 					case 'TAG_Int_Array':
 						var container = $('<ul>').addClass('nbtcontainer').hide();
-						for (var i = 0; i < data.value.length; i++) container.append($('<li>').text(String(data.value[i])));
-						if (key) return display.append($('<img>').attr('src', '/TAG_Int_Array.ico')).append($('<span>').text(key + ':')).append(container);
-						else return display.append($('<img>').attr('src', '/TAG_Int_Array.ico')).append(container);
+						for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Int', value: data.value[i]}));
+						if (key) return display.attr('key', key).append($('<img>').attr('src', '/TAG_Int_Array.ico')).append($('<span>').text(key + ':').mouseover(showedit)).append(container);
+						else return display.append($('<img>').attr('src', '/TAG_Int_Array.ico').mouseover(showedit)).append(container);
 					default:
 						throw new Error('No such tag: ' + data.type);
 				}
@@ -168,6 +306,14 @@
 				filedrag.addEventListener('dragover', FileDragHover);
 				filedrag.addEventListener('dragleave', FileDragHover);
 				filedrag.addEventListener('drop', FileSelectHandler);
+				
+				editor = ace.edit('ace');
+				editor.setShowPrintMargin(false);
+				editor.setShowInvisibles(false);
+				editor.getSession().on('change', function() {
+					if (editor.getValue() != editororig) $('button#save').addClass('btn-info');
+				});
+				$('button#save').click(save);
 			};
 		</script>
 	</head>
@@ -196,6 +342,17 @@
 		</nav>
 		<div id = 'body'>
 			<div id = 'nbt'></div>
+			<div id = 'editor' class = 'panel panel-default'>
+				<div class = 'panel-heading'>
+					<h3 class = 'panel-title'></h3>
+					<button class = 'btn btn-default pull-right' id = 'save'>Save</button>
+				</div>
+				<div class = 'panel-body'>
+					<div id = 'ace'></div>
+				</div>
+				<div class = 'panel-footer'>
+				</div>
+			</div>
 		</div>
 	</body>
 </html>

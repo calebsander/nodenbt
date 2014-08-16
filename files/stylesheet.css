@@ -84,9 +84,11 @@ div#nbt li {
   list-style-type:none;
   list-style-image:none;
   padding-left:14px;
+  height:20px;
 }
 div#nbt li:last-child {
   border:0px;
+  padding-left:15px;
 }
 div#nbt li:before {
   content:"";
@@ -98,11 +100,30 @@ div#nbt li:before {
   border-bottom:1px solid black;
 }
 div#nbt li:last-child:before {
-  border-left: 1px solid black;
-  width:10px;
+  border-left:1px solid black;
 }
 div.error {
   font-family:monospace;
   font-size:40;
   color:#e74c3c;
+}
+div#editor {
+  position:fixed;
+  top:75px;
+  left:50%;
+  right:20px;
+  bottom:0px;
+  display:none;
+}
+div#ace {
+  position:absolute;
+  top:38px;
+  left:0px;
+  right:0px;
+  bottom:0px;
+}
+button#save {
+  position:relative;
+  top:-28px;
+  left:15px;
 }

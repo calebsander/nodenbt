@@ -18,7 +18,7 @@ var TAG_String = 0x08;
 var TAG_List = 0x09;
 var TAG_Compound = 0x0A;
 var TAG_Int_Array = 0x0B;
-var readnbt, nbtobject, writenbt;
+var readnbt, nbtobject, writenbt, gzip, modified;
 
 //READ NBT
 
@@ -474,6 +474,7 @@ function return404(res) {
 }
 
 http.createServer(function(req, res) {
+	console.log(req.url);
 	if (req.url == '/nbtjson') {
 		res.setHeader('content-type', 'application/json');
 		if (nbtobject) res.end(JSON.stringify({success: true, data: nbtobject}));
@@ -492,6 +493,7 @@ http.createServer(function(req, res) {
 			}).on('end', function() {
 				nbtobject = JSON.parse(data);
 				res.setHeader('content-type', 'application/json');
+				modified = true;
 				res.end(JSON.stringify({success: true}));
 			});
 		}
@@ -516,21 +518,25 @@ http.createServer(function(req, res) {
 					readnbt = Buffer.concat([filebuffer, new Buffer([TAG_End])]);
 					try {
 						nbtobject = readCompound(0).value[''];
+						gzip = false;
+						modified = false;
 						res.end(JSON.stringify({success: true, gzip: false}));
 					}
 					catch (error) {
-						console.log(error);
+						console.log(error.stack);
 						res.end(JSON.stringify({success: false, message: 'not dat or gzip'}));
 					}
 				}
 				else {
 					readnbt = Buffer.concat([result, new Buffer([TAG_End])]);
 					try {
-						res.end(JSON.stringify({success: true, gzip: true}));
 						nbtobject = readCompound(0).value[''];
+						gzip = true;
+						modified = false;
+						res.end(JSON.stringify({success: true, gzip: true}));
 					}
 					catch (error) {
-						console.log(error);
+						console.log(error.stack);
 						res.end(JSON.stringify({success: false, message: 'parse failed'}));
 					}
 				}
@@ -538,31 +544,43 @@ http.createServer(function(req, res) {
 		});
 	}
 	else if (req.url.substring(0, 10) == '/download/') {
-		var gzip = url.parse(req.url, true).query.gzip == 'true';
-		writenbt = new Buffer(0);
-		if (gzip) {
-			try {
-				writeCompound({'': nbtobject}, 0);
-				zlib.gzip(writenbt, function(err, result) {
+		if (nbtobject) {
+			if (gzip) {
+				try {
+					if (modified) {
+						writenbt = new Buffer(0);
+						writeCompound({'': nbtobject}, 0);
+					}
+					else writenbt = readnbt;
+					zlib.gzip(writenbt, function(err, result) {
+						res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1, req.url.length)));
+						res.end(result);
+					});
+				}
+				catch (error) {
+					console.log(error.stack);
+					req.destroy(); //sending JSON will screw up the user, better to send nothing
+				}
+			}
+			else {
+				try {
+					if (modified) {
+						writenbt = new Buffer(0);
+						writeCompound({'': nbtobject}, 0);
+					}
+					else writenbt = readnbt;
 					res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1, req.url.length)));
 					res.end(result);
-				});
-			}
-			catch (error) {
-				console.log(error);
-				req.destroy(); //sending JSON will screw up the user, better to send nothing
+				}
+				catch (error) {
+					console.log(error.stack);
+					req.destroy(); //sending JSON will screw up the user, better to send nothing
+				}
 			}
 		}
 		else {
-			try {
-				writeCompound({'': nbtobject}, 0);
-				res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1, req.url.length)));
-				res.end(result);
-			}
-			catch (error) {
-				console.log(error);
-				req.destroy(); //sending JSON will screw up the user, better to send nothing
-			}
+			res.setHeader('content-type', 'application/json');
+			res.end(JSON.stringify({success: false, message: 'no data'}));
 		}
 	}
 	else {
