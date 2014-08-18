@@ -515,7 +515,7 @@ http.createServer(function(req, res) {
 			res.setHeader('content-type', 'application/json');
 			zlib.gunzip(data, function(err, result) {
 				if (err) {
-					readnbt = Buffer.concat([filebuffer, new Buffer([TAG_End])]);
+					readnbt = Buffer.concat([data, new Buffer([TAG_End])]);
 					try {
 						nbtobject = readCompound(0).value[''];
 						gzip = false;
