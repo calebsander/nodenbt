@@ -4,7 +4,7 @@
 		<link href = '/TAG_Compound.ico' rel = 'icon' />
 		<link href = '/bootstrap/css/bootstrap.css' rel = 'stylesheet' />
 		<link href = '/css/flat-ui.css' rel = 'stylesheet' />
-		<link type = 'text/css' href = '/stylesheet.css' rel = 'stylesheet' />
+		<link href = '/stylesheet.css' rel = 'stylesheet' />
 		<script src = '/jquery.js'></script>
 		<script src = '/js/bootstrap.min.js'></script>
 		<script src = '/ace/ace.js' charset = 'utf-8'></script>
@@ -122,15 +122,13 @@
 			function edit() {
 				var parent = $(this).parent();
 				if (parent.is('span')) parent = parent.parent();
-				var key = parent.attr('key');
 				savetag = parent;
-				$('div#editor h3.panel-title').children(':not(button)').remove();
 				switch (parent.children('img.type').attr('src')) {
 					case '/TAG_Byte.ico':
-						if (key) {
+						if (parent.attr('key')) {
 							editororig = parent.attr('value');
 							editor.setValue(parent.attr('value'));
-							$('div#editor h3.panel-title').text('Editing ' + key);
+							$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 						}
 						else {
 							editororig = parent.children('span').text();
@@ -139,10 +137,10 @@
 						}
 						break;
 					case '/TAG_Short.ico':
-						if (key) {
+						if (parent.attr('key')) {
 							editororig = parent.attr('value');
 							editor.setValue(parent.attr('value'));
-							$('div#editor h3.panel-title').text('Editing ' + key);
+							$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 						}
 						else {
 							editororig = parent.children('span').text();
@@ -151,10 +149,10 @@
 						}
 						break;
 					case '/TAG_Int.ico':
-						if (key) {
+						if (parent.attr('key')) {
 							editororig = parent.attr('value');
 							editor.setValue(parent.attr('value'));
-							$('div#editor h3.panel-title').text('Editing ' + key);
+							$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 						}
 						else {
 							editororig = parent.children('span').text();
@@ -163,10 +161,10 @@
 						}
 						break;
 					case '/TAG_Long.ico':
-						if (key) {
+						if (parent.attr('key')) {
 							editororig = parent.attr('value');
 							editor.setValue(parent.attr('value'));
-							$('div#editor h3.panel-title').text('Editing ' + key);
+							$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 						}
 						else {
 							editororig = parent.children('span').text();
@@ -175,10 +173,10 @@
 						}
 						break;
 					case '/TAG_Float.ico':
-						if (key) {
+						if (parent.attr('key')) {
 							editororig = parent.attr('value');
 							editor.setValue(parent.attr('value'));
-							$('div#editor h3.panel-title').text('Editing ' + key);
+							$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 						}
 						else {
 							editororig = parent.children('span').text();
@@ -187,10 +185,10 @@
 						}
 						break;
 					case '/TAG_Double.ico':
-						if (key) {
+						if (parent.attr('key')) {
 							editororig = parent.attr('value');
 							editor.setValue(parent.attr('value'));
-							$('div#editor h3.panel-title').text('Editing ' + key);
+							$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 						}
 						else {
 							editororig = parent.children('span').text();
@@ -203,10 +201,10 @@
 						var elements = parent.children('ul').children();
 						for (var i = 0; i < elements.length; i++) editorvalue += elements.eq(i).text() + '\n';
 						editorvalue = editorvalue.substring(0, editorvalue.length - 1);
-						if (key) {
+						if (parent.attr('key')) {
 							editororig = editorvalue;
 							editor.setValue(editorvalue);
-							$('div#editor h3.panel-title').text('Editing ' + key);
+							$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 						}
 						else {
 							editororig = editorvalue;
@@ -215,10 +213,10 @@
 						}
 						break;
 					case '/TAG_String.ico':
-						if (key) {
+						if (parent.attr('key')) {
 							editororig = parent.attr('value');
 							editor.setValue(parent.attr('value'));
-							$('div#editor h3.panel-title').text('Editing ' + key);
+							$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 						}
 						else {
 							editororig = parent.attr('value');
@@ -231,10 +229,10 @@
 						var elements = parent.children('ul').children();
 						for (var i = 0; i < elements.length; i++) editorvalue += elements.eq(i).text() + '\n';
 						editorvalue = editorvalue.substring(0, editorvalue.length - 1);
-						if (key) {
+						if (parent.attr('key')) {
 							editororig = editorvalue;
 							editor.setValue(editorvalue);
-							$('div#editor h3.panel-title').text('Editing ' + key);
+							$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 						}
 						else {
 							editororig = editorvalue;
@@ -258,20 +256,20 @@
 			function valuecheck(type, value) {
 				switch (type) {
 					case '/TAG_Byte.ico':
-						value = Math.floor(Number(value));
-						if (value < -128 || value > 127 || isNaN(value) || value == '') return {success: false, message: String(value) + " is out of TAG_Byte's range"};
+						value = Number(value);
+						if (value < -128 || value > 127 || isNaN(value) || value == '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Byte's range"};
 						return {success: true};
 					case '/TAG_Short.ico':
-						value = Math.floor(Number(value));
-						if (value < -32768 || value > 32767 || isNaN(value) || value == '') return {success: false, message: String(value) + " is out of TAG_Short's range"};
+						value = Number(value);
+						if (value < -32768 || value > 32767 || isNaN(value) || value == '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Short's range"};
 						return {success: true};
 					case '/TAG_Int.ico':
-						value = Math.floor(Number(value));
-						if (value < -2147483648 || value > 2147483647 || isNaN(value) || value == '') return {success: false, message: String(value) + " is out of TAG_Int's range"};
+						value = Number(value);
+						if (value < -2147483648 || value > 2147483647 || isNaN(value) || value == '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Int's range"};
 						return {success: true};
-					case '/TAG_Long.ico': //lower limit is not working
-						value = new BigNumber(value, 0, BigNumber.ROUND_DOWN);
-						if (value.compare(new BigNumber('-9223372036854775808')) == -1 || value.compare(new BigNumber('9223372036854775807')) == 1) return {success: false, message: String(value) + " is out of TAG_Long's range"};
+					case '/TAG_Long.ico':
+						var bn = new BigNumber(value);
+						if (bn.compare(new BigNumber('-9223372036854775808')) == 1 || bn.compare(new BigNumber('9223372036854775807')) == 1 || value.indexOf('.') > -1 || (!bn.compare(new BigNumber(0)) && value != '0')) return {success: false, message: String(value) + " is out of TAG_Long's range"};
 						return {success: true};
 					case '/TAG_Float.ico':
 						if (isNaN(Number(value)) || value == '') return {success: false, message: 'NaN'};
@@ -351,15 +349,35 @@
 				}
 			}
 			
-			var renameimg;
-			function rename() { //no client or server code yet
-				
+			var renameimg, renameorig;
+			function rename() {
+				var parent = $(this).parent();
+				if (parent.is('span')) parent = parent.parent();
+				savetag = parent;
+				renameorig = parent.attr('key');
+				$('div#tagname h3.panel-title').text('Renaming ' + renameorig);
+				$('button#tagsave').off().click(savename);
+				if (renameorig) $('button#tagsave').addClass('btn-success');
+				$('div#tagname').show();
+				$('input#taginput').focus();
 			}
 			function showrename() {
 				if (!$(this).is(renameimg) && !$(this).children('img.rename').is(renameimg)) {
 					renameimg = $('<img>').addClass('rename').attr('src', '/rename.ico').attr('title', 'Rename tag').click(rename);
 					if ($(this).is('img')) $(this).after(renameimg);
 					else $(this).append(renameimg);
+				}
+			}
+			function savename() { //no server code yet
+				if (!$('button#tagsave').hasClass('btn-danger')) {
+					var newname = $('input#taginput').val();
+					var savetype = savetag.children('img.type').attr('src');
+					savetag.attr('key', newname);
+					if (savetag.attr('value')) savetag.children('span').text(newname + ': ' + savetag.attr('value'));
+					else savetag.children('span').text(newname + ':');
+					$('input#taginput').val('');
+					$('button#tagsave').removeClass('btn-success').removeClass('btn-danger');
+					$('div#tagname').hide();
 				}
 			}
 			
@@ -389,7 +407,7 @@
 			}
 			
 			function renderJSON(data, key, noedit) {
-				var display = $('<li>').addClass('tag');
+				var display = $('<li>');
 				switch (data.type) {
 					case 'TAG_Byte':
 						if (key) {
@@ -479,6 +497,39 @@
 					if (editor.getValue() != editororig) $('button#save').addClass('btn-info');
 				});
 				$('button#save').click(save);
+				$('input#taginput').keydown(function(e) {
+					if (e.which == 13) savename();
+					else if (e.which == 27) {
+						$('input#taginput').val('');
+						$(this).removeClass('btn-success').removeClass('btn-danger');
+						$('div#tagname').hide();
+					}
+					else {
+						setTimeout($.proxy(function() {
+							var value = $(this).val();
+							if (value != renameorig) {
+								if (value.length < 32768) {
+									var siblings = savetag.parent().children();
+									var success = true;
+									for (var i = 0; i < siblings.length; i++) {
+										if (siblings.eq(i).attr('key') == value && !siblings.eq(i).is(savetag)) {
+											success = false;
+											break;
+										}
+									}
+									if (success) $('button#tagsave').removeClass('btn-danger').addClass('btn-success');
+									else $('button#tagsave').removeClass('btn-success').addClass('btn-danger');
+								}
+								else $('button#tagsave').removeClass('btn-success').addClass('btn-danger');
+							}
+							else $('button#tagsave').removeClass('btn-success').removeClass('btn-danger');
+						}, this), 0);
+					}
+				}).focus(function() {
+					$('button#tagsave').removeClass('blur').addClass('focus');
+				}).blur(function() {
+					$('button#tagsave').removeClass('focus').addClass('blur');
+				});
 			};
 		</script>
 	</head>
@@ -516,6 +567,19 @@
 					<div id = 'ace'></div>
 				</div>
 				<div class = 'panel-footer'>
+				</div>
+			</div>
+			<div id = 'tagname' class = 'panel panel-default'>
+				<div class = 'panel-heading'>
+					<h3 class = 'panel-title'></h3>
+				</div>
+				<div class = 'panel-body'>
+					<div class = 'input-group'>
+						<input id = 'taginput' class = 'form-control' placeholder = 'New tag name' />
+						<span class = 'input-group-btn'>
+							<button id = 'tagsave' class = 'btn btn-default'>Save</button>
+						</span>
+					</div>
 				</div>
 			</div>
 		</div>
