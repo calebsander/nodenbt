@@ -280,8 +280,6 @@ function readInt_Array(offset) {
 
 //WRITE NBT
 
-function writeEnd() {}
-
 function writeByte(value) {
 	if (value < -128 || value > 127) throw new Error('out of range: ' + String(value));
 	var bytebuffer = new Buffer(1);
@@ -339,7 +337,6 @@ function writeList(value) {
 	var writeFunction, writeType;
 	switch (value.type) {
 		case null:
-			writeFunction = writeEnd;
 			writeType = TAG_End;
 			break;
 		case 'TAG_Byte':
