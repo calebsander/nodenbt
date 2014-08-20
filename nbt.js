@@ -628,4 +628,5 @@ http.createServer(function(req, res) {
 		}
 	}
 }).listen(PORT);
-console.log('Server listening on port ' + String(PORT) + '\n');
+
+console.log('Server listening on port ' + PORT);
