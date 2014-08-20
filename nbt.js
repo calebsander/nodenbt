@@ -6,6 +6,8 @@ var http = require('http');
 var mime = require('mime');
 var url = require('url');
 
+var PORT = 8080;
+
 var TAG_End = 0x00;
 var TAG_Byte = 0x01;
 var TAG_Short = 0x02;
@@ -625,4 +627,6 @@ http.createServer(function(req, res) {
 			});
 		}
 	}
-}).listen(8080);
+}).listen(PORT);
+
+console.log('Server listening on port ' + PORT);
