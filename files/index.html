@@ -130,6 +130,7 @@
 					case 'TAG_Byte_Array':
 						var container = $('<ul>').addClass('nbtcontainer').hide();
 						for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Byte', value: data.value[i]}));
+						addudicons(container);
 						if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', '/TAG_Byte_Array.ico').attr('title', 'TAG_Byte_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce)).append(container);
 						else return display.append($('<img>').addClass('type').attr('src', '/TAG_Byte_Array.ico').attr('title', 'TAG_Byte_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete)).append(container);
 					case 'TAG_String':
@@ -137,8 +138,8 @@
 						else return display.attr('value', data.value).append($('<img>').addClass('type').attr('src', '/TAG_String.ico').attr('title', 'TAG_String')).append($('<span>').text('"' + data.value + '"').mouseover(removeicons).mouseover(showedit).mouseover(showdelete));
 					case 'TAG_List':
 						var container = $('<ul>').addClass('nbtcontainer').hide();
-						var element = {};
 						for (var i = 0; i < data.value.list.length; i++) container.append(renderJSON({type: data.value.type, value: data.value.list[i]}));
+						addudicons(container);
 						if (key) {
 							display.attr('key', key).attr('type', data.value.type).append($('<img>').addClass('type').attr('src', '/TAG_List.ico').attr('title', 'TAG_List').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showdelete).mouseover(showrename).mouseover(showadd)).append(container);
 							if (data.value.list.length && coercibletypes.indexOf(data.value.type) > -1) display.children('span').mouseover(showcoerce);
@@ -157,6 +158,7 @@
 					case 'TAG_Int_Array':
 						var container = $('<ul>').addClass('nbtcontainer').hide();
 						for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Int', value: data.value[i]}));
+						addudicons(container);
 						if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', '/TAG_Int_Array.ico').attr('title', 'TAG_Int_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce)).append(container);
 						else return display.append($('<img>').addClass('type').attr('src', '/TAG_Int_Array.ico').attr('title', 'TAG_Int_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete)).append(container);
 					default:
@@ -171,6 +173,8 @@
 				if (renameimg && !$(this).is(renameimg) && !$(this).children('img.rename').is(renameimg)) renameimg.remove();
 				if (addimg && !$(this).is(addimg) && !$(this).children('img.add').is(addimg)) addimg.remove();
 				if (coerceimg && !$(this).is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) coerceimg.remove();
+				if (upimg && !$(this).is(upimg) && !$(this).children('img.up').is(upimg)) upimg.remove();
+				if (downimg && !$(this).is(downimg) && !$(this).children('img.down').is(downimg)) downimg.remove();
 			}
 			
 			var editimg, editor, editororig;
@@ -504,6 +508,56 @@
 					coerceimg = $('<img>').addClass('coerce').attr('src', '/coerce.ico').attr('title', 'Convert type').click(coerce);
 					if ($(this).is('img')) $(this).after(coerceimg);
 					else $(this).append(coerceimg);
+				}
+			}
+			
+			function addudicons(list) {
+				var elements = list.children(), element, j;
+				for (var i = 0; i < elements.length; i++) {
+					if (elements.eq(i).children('span').length) element = elements.eq(i).children('span');
+					else element = elements.eq(i).children('img.type');
+					element.off('mouseover', showup).off('mouseover', showdown);
+					if (i) element.mouseover(showup);
+					if (i != elements.length - 1) element.mouseover(showdown);
+				}
+			}
+			var upimg;
+			function up() {
+				var parent = $(this).parent();
+				if (parent.is('span')) parent = parent.parent();
+				var prevsibling = parent.prev();
+				parent.detach();
+				prevsibling.before(parent);
+				addudicons(parent.parent());
+				removeicons();
+				parent.children('img.type').mouseover();
+				parent.children('span').mouseover();
+			}
+			function showup() {
+				if (!$(this).is(upimg) && !$(this).children('img.up').is(upimg)) {
+					upimg = $('<img>').addClass('up').attr('src', '/up.ico').attr('title', 'Move up').click(up);
+					if ($(this).is('img')) $(this).after(upimg);
+					else $(this).append(upimg);
+				}
+			}
+			
+			var downimg;
+			function down() {
+				var parent = $(this).parent();
+				if (parent.is('span')) parent = parent.parent();
+				var nextsibling = parent.next();
+				parent.detach();
+				nextsibling.after(parent);
+				addudicons(parent.parent());
+				removeicons();
+				parent.children('img.type').mouseover();
+				parent.children('span').mouseover();
+			}
+			function showdown() {
+				if (!$(this).is(downimg) && !$(this).children('img.down').is(downimg)) {
+					downimg = $('<img>').addClass('down').attr('src', '/down.ico').attr('title', 'Move down').click(down);
+					if ($(this).is('img')) $(this).after(downimg);
+					else $(this).append(downimg);
 				}
 			}
 
