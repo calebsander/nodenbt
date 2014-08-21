@@ -375,15 +375,15 @@
 							if (savetag.attr('key')) savetag.children('span').text(savetag.attr('key') + ': ' + editorvalue);
 							else savetag.children('span').text(editorvalue);
 						}
-						$(this).removeClass('btn-info');
-						$('div#editor').hide();
+						closeeditor();
 					}
 					else alert(valueworks.message); //should be cleaned up
 				}
-				else {
-					$(this).removeClass('btn-info');
-					$('div#editor').hide();
-				}
+				else closeeditor();
+			}
+			function closeeditor() {
+				$('button#save').removeClass('btn-info');
+				$('div#editor').hide();
 			}
 			
 			var deleteimg;
@@ -412,7 +412,7 @@
 				newtag = false;
 				renameorig = parent.attr('key');
 				$('div#tagname h3.panel-title').text('Renaming ' + renameorig);
-				if (renameorig) $('button#namesave').addClass('btn-success');
+				$('input#nameinput').keydown();
 				$('div#tagname').show();
 				$('input#nameinput').focus();
 			}
@@ -430,10 +430,13 @@
 					savetag.attr('key', newname);
 					if (savetag.attr('value')) savetag.children('span').text(newname + ': ' + savetag.attr('value'));
 					else savetag.children('span').text(newname + ':');
-					$('input#nameinput').val('');
-					$('button#namesave').removeClass('btn-success').removeClass('btn-danger');
-					$('div#tagname').hide();
+					closename();
 				}
+			}
+			function closename() {
+				$('input#nameinput').val('');
+				$('button#namesave').removeClass('btn-success').removeClass('btn-danger');
+				$('div#tagname').hide();
 			}
 			
 			var addimg, newtag, tagtype, defaults = {
@@ -481,9 +484,7 @@
 			function compoundsave() {
 				if ($('button#namesave').hasClass('btn-success')) {
 					createtag(tagtype, $('input#nameinput').val());
-					$('input#nameinput').val('');
-					$('button#namesave').removeClass('btn-success').removeClass('btn-danger');
-					$('div#tagname').hide();
+					closename();
 				}
 			}
 			function typesave() {
@@ -518,17 +519,18 @@
 				editor.getSession().on('change', function() {
 					if (editor.getValue() != editororig) $('button#save').addClass('btn-info');
 				});
+				editor.keyBinding.originalOnCommandKey = editor.keyBinding.onCommandKey;
+				editor.keyBinding.onCommandKey = function(e, hashId, keyCode) {
+					if (keyCode == 27) closeeditor();
+				};
+				
 				$('button#save').click(save);
 				$('input#nameinput').keydown(function(e) {
 					if (e.which == 13) {
 						if (newtag) compoundsave();
 						else savename();
 					}
-					else if (e.which == 27) {
-						$('input#nameinput').val('');
-						$(this).removeClass('btn-success').removeClass('btn-danger');
-						$('div#tagname').hide();
-					}
+					else if (e.which == 27) closename();
 					else {
 						setTimeout($.proxy(function() {
 							var value = $(this).val();
