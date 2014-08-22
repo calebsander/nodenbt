@@ -127,7 +127,7 @@ button#save {
   top:-28px;
   left:15px;
 }
-div#tagname {
+div#tagname, div#tagtype {
   position:fixed;
   top:75px;
   left:50%;
@@ -135,11 +135,11 @@ div#tagname {
   height:109px;
   display:none;
 }
-button#tagsave.focus {
+button#namesave.focus {
   border:2px solid #1abc9c;
   border-left:none;
 }
-button#tagsave.blur {
+button#namesave.blur {
   border:2px solid #bdc3c7;
   border-left:none;
 }
@@ -150,4 +150,10 @@ button#tagsave.blur {
 .btn-danger {
   color:#fff !important;
   background-color:#e74c3c !important;
+}
+button#typesave {
+  top:-10px;
+  height:41px;
+  border:none;
+  z-index:100;
 }
