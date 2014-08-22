@@ -179,6 +179,7 @@
 			
 			var editimg, editor, editororig;
 			function edit() {
+				closeall();
 				var parent = $(this).parent();
 				if (parent.is('span')) parent = parent.parent();
 				savetag = parent;
@@ -395,10 +396,7 @@
 				var parent = $(this).parent();
 				if (parent.is('span')) parent = parent.parent();
 				parent.remove();
-				if (savetag.is(parent)) {
-					$(this).removeClass('btn-info');
-					$('div#editor').hide();
-				}
+				if (parent.is(savetag) || parent.find(savetag).length) closeall();
 			}
 			function showdelete() {
 				if (!$(this).is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) {
@@ -410,6 +408,7 @@
 			
 			var renameimg, renameorig;
 			function rename() {
+				closeall();
 				var parent = $(this).parent();
 				if (parent.is('span')) parent = parent.parent();
 				savetag = parent;
@@ -460,6 +459,7 @@
 				savetag.children('ul').append(renderJSON({type: type, value: defaults[type]}, key));
 			}
 			function add() { //no server code yet
+				closeall();
 				var parent = $(this).parent();
 				if (parent.is('span')) parent = parent.parent();
 				savetag = parent;
@@ -491,17 +491,14 @@
 					closename();
 				}
 			}
-			function typesave() {
-				tagtype = $('select#typeinput').val();
-				$('div#tagname').show();
-				$('input#nameinput').focus();
+			function closetype() {
 				$('div#tagtype').hide();
 			}
 			
 			var coerceimg;
-			var coercibletypes = ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_Byte_Array', 'TAG_String', 'TAG_Int_Array'];
+			var coercibletypes = [null, 'TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_Byte_Array', 'TAG_String', 'TAG_Int_Array'];
 			function coerce() { //no client or server code yet
-				
+				closeall();
 			}
 			function showcoerce() {
 				if (!$(this).is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) {
@@ -559,6 +556,12 @@
 					if ($(this).is('img')) $(this).after(downimg);
 					else $(this).append(downimg);
 				}
+			}
+			
+			function closeall() {
+				closeeditor();
+				closename();
+				closetype();
 			}
 
 			window.onload = function() {
@@ -627,7 +630,12 @@
 					if (newtag) compoundsave();
 					else savename();
 				});
-				$('button#typesave').click(typesave);
+				$('button#typesave').click(function() {
+					closetype();
+					tagtype = $('select#typeinput').val();
+					$('div#tagname').show();
+					$('input#nameinput').focus();
+				});
 				$('select').selectpicker({style: 'btn btn-primary', menuStyle: 'dropdown-inverse'});
 			};
 		</script>
