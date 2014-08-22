@@ -37,9 +37,12 @@ div#filedrag {
   margin-top:12px;
   color:#fff;
   padding:0px 5px;
-  border:2px dashed #fff;
+  border:2px dashed #536475;
   border-radius:7px;
   cursor:default;
+}
+div#filedrag:hover{
+  border:2px dashed #fff;
 }
 div#filedrag.hover {
   color:#888;
