@@ -586,6 +586,13 @@
 					if (keyCode == 27) closeeditor();
 				};
 				
+				$('#filedrag').mouseleave(function(){
+					$(this).html('Upload');
+				});
+				$('#filedrag').mouseenter(function(){
+					$(this).html('Drop file here');
+				})
+
 				$('button#save').click(save);
 				$('input#nameinput').keydown(function(e) {
 					if (e.which == 13) {
@@ -651,7 +658,7 @@
 				<a class = 'navbar-brand' href = '#'>jNBT</a>
 			</div>
 			<ul class = 'nav navbar-nav'>
-				<li><div id = 'filedrag'>Drop file here</div></li>
+				<li><div id = 'filedrag'>Upload</div></li>
 				<li>
 					<a href = '#' id = 'download'>
 						Download
