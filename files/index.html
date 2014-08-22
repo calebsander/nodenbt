@@ -50,7 +50,8 @@
 			function FileDragHover(e) {
 				e.stopPropagation();
 				e.preventDefault();
-				e.target.className = (e.type == 'dragover' ? 'hover' : '');
+				if (e.type == 'dragover') $('div#filedrag').addClass('hover').text('Drop file here');
+				else $('div#filedrag').removeClass('hover').text('Upload');
 			}
 			function FileSelectHandler(e) {
 				FileDragHover(e);
@@ -586,11 +587,10 @@
 					if (keyCode == 27) closeeditor();
 				};
 				
-				$('#filedrag').mouseleave(function(){
-					$(this).html('Upload');
-				});
-				$('#filedrag').mouseenter(function(){
-					$(this).html('Drop file here');
+				$('div#filedrag').hover(function() {
+					$(this).text('Drop file here');
+				}, function() {
+					$(this).text('Upload');
 				})
 
 				$('button#save').click(save);
@@ -658,7 +658,7 @@
 				<a class = 'navbar-brand' href = '#'>jNBT</a>
 			</div>
 			<ul class = 'nav navbar-nav'>
-				<li><div id = 'filedrag'>Upload</div></li>
+				<li id = 'fileparent'><div id = 'filedrag'>Upload</div></li>
 				<li>
 					<a href = '#' id = 'download'>
 						Download

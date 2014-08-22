@@ -3,20 +3,6 @@ body {
   font-size:40;
   overflow:hidden;
 }
-div#header {
-  position:fixed;
-  top:-20px;
-  left:20px;
-  right:20px;
-  height:90px;
-  border-bottom:2px solid #DDD;
-  border-radius:10px;
-  background:#EEE;
-  box-shadow:0px 0px 2px 1px #DDD;
-  padding-top:45px;
-  z-index:5;
-  transition:top 0.3s linear;
-}
 .navbar {
   position:fixed;
   top:10px;
@@ -32,17 +18,17 @@ div#header {
   border-top-color:#34495e;
   border-bottom-color:#34495e;
 }
+li#fileparent {
+  width:113px;
+}
 div#filedrag {
   font-weight:bold;
   margin-top:12px;
   color:#fff;
-  padding:0px 5px;
-  border:2px dashed #536475;
+  border:2px dashed #fff;
   border-radius:7px;
   cursor:default;
-}
-div#filedrag:hover{
-  border:2px dashed #fff;
+  text-align:center;
 }
 div#filedrag.hover {
   color:#888;
