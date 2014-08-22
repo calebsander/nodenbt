@@ -124,7 +124,7 @@ button#save {
   position:relative;
   top:-28px;
   left:15px;
-  border-radius: 0px 4px 0px 0px;
+  border-radius:0px 4px 0px 0px;
 }
 div#tagname, div#tagtype {
   position:fixed;

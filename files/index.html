@@ -329,7 +329,12 @@
 						return {success: true};
 					case '/TAG_Long.ico':
 						var bn = new BigNumber(value);
-						if (bn.compare(new BigNumber('-9223372036854775808')) == 1 || bn.compare(new BigNumber('9223372036854775807')) == 1 || value.indexOf('.') > -1 || (!bn.compare(new BigNumber(0)) && value != '0')) return {success: false, message: String(value) + " is out of TAG_Long's range"};
+						if (value.indexOf('.') > -1 || (!bn.compare(new BigNumber(0)) && value != '0')) return {success: false, message: value + " is out of TAG_Long's range"};
+						if (value[0] == '-') {
+							bn = new BigNumber(value.substring(1));
+							if (bn.compare(new BigNumber('9223372036854775808')) == 1) return {success: false, message: value + " is out of TAG_Long's range"};
+						}
+						else if (bn.compare(new BigNumber('9223372036854775807')) == 1) return {success: false, message: value + " is out of TAG_Long's range"};
 						return {success: true};
 					case '/TAG_Float.ico':
 						if (isNaN(Number(value)) || value == '') return {success: false, message: 'NaN'};
