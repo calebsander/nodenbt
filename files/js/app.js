@@ -356,7 +356,7 @@ function edit() {
 }
 function showedit() {
 	if (!$(this).is(editimg) && !$(this).children('img.edit').is(editimg)) {
-		editimg = $('<img>').addClass('edit').attr('src', assets.imaegs['edit'].url).attr('title', 'Edit value').click(edit);
+		editimg = $('<img>').addClass('edit').attr('src', assets.images['edit'].url).attr('title', 'Edit value').click(edit);
 		if ($(this).is('img')) $(this).after(editimg);
 		else $(this).append(editimg);
 	}
