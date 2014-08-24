@@ -357,7 +357,7 @@
 						for (var i = 0; i < values.length; i++) {
 							if (!(valuecheck('/images/TAG_Int.png', values[i]).success)) return {success: false, message: values[i] + ' (element ' + String(i + 1) + ") is out of TAG_Int's range"};
 						}
-						return {success: true, value: value};
+						return {success: true, value: values};
 					default:
 						throw new Error('No such tag: ' + type);
 				}
@@ -373,7 +373,8 @@
 							else nbttype = 'TAG_Int';
 							var container = savetag.children('ul');
 							container.children().remove();
-							for (var i = 0; i < values.length; i++) container.append(renderJSON({type: nbttype, value: Number(valueworks.value[i])}, undefined, true));
+							for (var i = 0; i < valueworks.value.length; i++) container.append(renderJSON({type: nbttype, value: Number(valueworks.value[i])}, undefined, true));
+							addudicons(container);
 						}
 						else {
 							savetag.attr('value', valueworks.value);
