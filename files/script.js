@@ -189,13 +189,13 @@ function renderJSON(data, key) {
 			for (var i = 0; i < data.value.list.length; i++) container.append(renderJSON({type: data.value.type, value: data.value.list[i]}));
 			addudicons(container);
 			if (key) {
-				display.attr('key', key).attr('type', data.value.type).append($('<img>').addClass('type').attr('src', assets.images['TAG_List'].url).attr('title', 'TAG_List').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showdelete).mouseover(showrename).mouseover(showadd)).append(container);
-				if (data.value.list.length && coercibletypes.indexOf(data.value.type) > -1) display.children('span').mouseover(showcoerce);
+				display.attr('key', key).attr('type', String(data.value.type)).append($('<img>').addClass('type').attr('src', assets.images['TAG_List'].url).attr('title', 'TAG_List').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showdelete).mouseover(showrename).mouseover(showadd)).append(container);
+				if (coerceto[String(data.value.type)]) display.children('span').mouseover(showcoerce);
 				return display;
 			}
 			else {
-				display.attr('type', data.value.type).append($('<img>').addClass('type').attr('src', assets.images['TAG_List'].url).attr('title', 'TAG_List').click(togglecontainer).mouseover(removeicons).mouseover(showdelete).mouseover(showadd)).append(container);
-				if (data.value.list.length && coercibletypes.indexOf(data.value.type) > -1) display.children('img').mouseover(showcoerce);
+				display.attr('type', String(data.value.type)).append($('<img>').addClass('type').attr('src', assets.images['TAG_List'].url).attr('title', 'TAG_List').click(togglecontainer).mouseover(removeicons).mouseover(showdelete).mouseover(showadd)).append(container);
+				if (coerceto[String(data.value.type)]) display.children('img').mouseover(showcoerce);
 				return display;
 			}
 		case 'TAG_Compound':
@@ -207,8 +207,8 @@ function renderJSON(data, key) {
 			var container = $('<ul>').addClass('nbtcontainer').hide();
 			for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Int', value: data.value[i]}));
 			addudicons(container);
-			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', assets.images['TAG_Int_Array'].url).attr('title', 'TAG_Int_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce)).append(container);
-			else return display.append($('<img>').addClass('type').attr('src', assets.images['TAG_Int_Array'].url).attr('title', 'TAG_Int_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete)).append(container);
+			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', assets.images[tagtype].url).attr('title', 'TAG_Int_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce)).append(container);
+			else return display.append($('<img>').addClass('type').attr('src', assets.images[tagtype].url).attr('title', 'TAG_Int_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete)).append(container);
 		default:
 			throw new Error('No such tag: ' + data.type);
 	}
@@ -332,7 +332,7 @@ function edit() {
 				$('div#editor h3.panel-title').text('Editing TAG_Double');
 			}
 			break;
-		case assets.images['TAG_Int_Array'].url:
+		case assets.images[tagtype].url:
 			var editorvalue = '';
 			var elements = parent.children('ul').children();
 			for (var i = 0; i < elements.length; i++) editorvalue += elements.eq(i).text() + '\n';
@@ -366,15 +366,15 @@ function valuecheck(type, value) {
 		case assets.images['TAG_Byte'].url:
 			value = Number(value);
 			if (value < -128 || value > 127 || isNaN(value) || value == '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Byte's range"};
-			return {success: true};
+			return {success: true, value: value};
 		case assets.images['TAG_Short'].url:
 			value = Number(value);
 			if (value < -32768 || value > 32767 || isNaN(value) || value == '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Short's range"};
-			return {success: true};
+			return {success: true, value: value};
 		case assets.images['TAG_Int'].url:
 			value = Number(value);
 			if (value < -2147483648 || value > 2147483647 || isNaN(value) || value == '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Int's range"};
-			return {success: true};
+			return {success: true, value: value};
 		case assets.images['TAG_Long'].url:
 			var bn = new BigNumber(value);
 			if (value.indexOf('.') > -1 || (!bn.compare(new BigNumber(0)) && value != '0')) return {success: false, message: value + " is out of TAG_Long's range"};
@@ -383,28 +383,28 @@ function valuecheck(type, value) {
 				if (bn.compare(new BigNumber('9223372036854775808')) == 1) return {success: false, message: value + " is out of TAG_Long's range"};
 			}
 			else if (bn.compare(new BigNumber('9223372036854775807')) == 1) return {success: false, message: value + " is out of TAG_Long's range"};
-			return {success: true};
+			return {success: true, value: value};
 		case assets.images['TAG_Float'].url:
 			if (isNaN(Number(value)) || value == '') return {success: false, message: 'NaN'};
-			return {success: true};
+			return {success: true, value: Number(value)};
 		case assets.images['TAG_Double'].url:
 			if (isNaN(Number(value)) || value == '') return {success: false, message: 'NaN'};
-			return {success: true};
+			return {success: true, value: Number(value)};
 		case assets.images['TAG_Byte_Array'].url:
 			var values = value.split('\n');
 			for (var i = 0; i < values.length; i++) {
-				if (!(valuecheck(assets.images['TAG_Byte'].url, values[i]).success)) return {success: false, message: values[i] + ' (line ' + String(i + 1) + ") is out of TAG_Byte's range"};
+				if (!(valuecheck(assets.images['TAG_Byte'].url, values[i]).success)) return {success: false, message: values[i] + ' (element ' + String(i + 1) + ") is out of TAG_Byte's range"};
 			}
-			return {success: true};
+			return {success: true, value: values};
 		case assets.images['TAG_String'].url:
 			if (value.length > 32767) return {success: false, message: value + " is longer than 32767 characters"};
-			return {success: true};
-		case assets.images['TAG_Int_Array'].url:
+			return {success: true, value: '"' + value + '"'};
+		case assets.images[tagtype].url:
 			var values = value.split('\n');
 			for (var i = 0; i < values.length; i++) {
-				if (!(valuecheck(assets.images['TAG_Int'].url, values[i]).success)) return {success: false, message: values[i] + ' (line ' + String(i + 1) + ") is out of TAG_Int's range"};
+				if (!(valuecheck(assets.images['TAG_Int'].url, values[i]).success)) return {success: false, message: values[i] + ' (element ' + String(i + 1) + ") is out of TAG_Int's range"};
 			}
-			return {success: true};
+			return {success: true, value: values};
 		default:
 			throw new Error('No such tag: ' + type);
 	}
@@ -420,18 +420,13 @@ function save() { //no server code yet
 				else nbttype = 'TAG_Int';
 				var container = savetag.children('ul');
 				container.children().remove();
-				var values = editorvalue.split('\n');
-				for (var i = 0; i < values.length; i++) container.append(renderJSON({type: nbttype, value: Number(values[i])}, undefined, true));
-			}
-			else if (savetype == assets.images['TAG_String'].url) {
-				savetag.attr('value', editorvalue)
-				if (savetag.attr('key')) savetag.children('span').text(savetag.attr('key') + ': "' + editorvalue + '"');
-				else savetag.children('span').text('"' + editorvalue + '"');
+				for (var i = 0; i < valueworks.value.length; i++) container.append(renderJSON({type: nbttype, value: Number(valueworks.value[i])}, undefined, true));
+				addudicons(container);
 			}
 			else {
-				savetag.attr('value', editorvalue);
-				if (savetag.attr('key')) savetag.children('span').text(savetag.attr('key') + ': ' + editorvalue);
-				else savetag.children('span').text(editorvalue);
+				savetag.attr('value', valueworks.value);
+				if (savetag.attr('key')) savetag.children('span').text(savetag.attr('key') + ': ' + String(valueworks.value));
+				else savetag.children('span').text(String(valueworks.value));
 			}
 			closeeditor();
 		}
@@ -504,12 +499,17 @@ var addimg, newtag, tagtype, defaults = {
 	TAG_Double: 0,
 	TAG_Byte_Array: [],
 	TAG_String: '',
-	TAG_List: {type: 'TAG_Byte', list: []},
+	TAG_List: {type: null, list: []},
 	TAG_Compound: {},
 	TAG_Int_Array: []
 };
 function createtag(type, key) {
 	savetag.children('ul').append(renderJSON({type: type, value: defaults[type]}, key));
+}
+function settypeselect(type) { //may have to call selectpicker on it again
+	var typeselect = $('select#typeinput');
+	typeselect.children().remove();
+	for (var i = 0; i < coerceto[type].length; i++) typeselect.append($('<option>').attr('value', coerceto[type][i]).text(coerceto[type][i]));
 }
 function add() { //no server code yet
 	closeall();
@@ -527,6 +527,7 @@ function add() { //no server code yet
 			$('div#tagtype h3.panel-title').text('Adding tag');
 			$('div#tagname h3.panel-title').text('Adding tag');
 		}
+		settypeselect('null');
 		$('div#tagtype').show();
 	}
 	else createtag(parent.attr('type'));
@@ -548,10 +549,33 @@ function closetype() {
 	$('div#tagtype').hide();
 }
 
-var coerceimg;
-var coercibletypes = [null, 'TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_Byte_Array', 'TAG_String', 'TAG_Int_Array'];
+var coerceimg, coerceto = {
+	'null': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_Byte_Array', 'TAG_String', 'TAG_List', 'TAG_Compound', 'TAG_Int_Array'],
+	'TAG_Byte': ['TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_String'],
+	'TAG_Short': ['TAG_Byte', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_String'],
+	'TAG_Int': ['TAG_Byte', 'TAG_Short', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_String'],
+	'TAG_Long': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Float', 'TAG_Double', 'TAG_String'],
+	'TAG_Float': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Double', 'TAG_String'],
+	'TAG_Double': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_String'],
+	'TAG_String': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double'],
+	'TAG_Byte_Array': ['TAG_Int_Array'],
+	'TAG_Int_Array': ['TAG_Byte_Array']
+};
 function coerce() { //no client or server code yet
 	closeall();
+	var parent = $(this).parent();
+	if (parent.is('span')) parent = parent.parent();
+	savetag = parent;
+	newtag = false;
+	if (parent.attr('type')) var type = parent.attr('type');
+	else {
+		var imgsrc = parent.children('img.type').attr('src');
+		var type = imgsrc.substring(8, imgsrc.length - 4);
+	}
+	settypeselect(type);
+	if (parent.attr('key')) $('div#tagtype h3.panel-title').text('Converting ' + parent.attr('key'));
+	else $('div#tagtype h3.panel-title').text('Converting ' + type);
+	$('div#tagtype').show();
 }
 function showcoerce() {
 	if (!$(this).is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) {
@@ -692,8 +716,79 @@ window.onload = function() {
 	$('button#typesave').click(function() {
 		closetype();
 		tagtype = $('select#typeinput').val();
-		$('div#tagname').show();
-		$('input#nameinput').focus();
+		if (newtag) {
+			$('div#tagname').show();
+			$('input#nameinput').focus();
+		}
+		else {
+			if (savetag.children('img.type').attr('src') == assets.images['TAG_List'].url) {
+				if (tagtype == 'TAG_List' || tagtype == 'TAG_Compound') {
+					savetag.attr('type', tagtype);
+				}
+				else {
+					var success = true, valueworks, elements = savetag.children('ul').children(), items, subchildren;
+					for (var i = 0; i < elements.length; i++) {
+						if (elements.eq(i).attr('value')) {
+							valueworks = valuecheck(assets.images[tagtype].url, elements.eq(i).attr('value'));
+							if (!valueworks.success) {
+								success = false;
+								alert(valueworks.message);
+							}
+						}
+						else { //converting a Byte_Array or Int_Array
+							subchildren = elements.eq(i).children('ul').children();
+							items = [];
+							for (j = 0; j < subchildren.length; j++) items[j] = subchildren.eq(j).attr('value');
+							valueworks = valuecheck(assets.images[tagtype].url, items.join('\n'));
+							if (!valueworks.success) {
+								success = false;
+								alert(valueworks.message);
+							}
+						}
+					}
+					if (success) {
+						savetag.attr('type', tagtype);
+						if (tagtype == 'TAG_Byte_Array') var subsrc = assets.images['TAG_Byte'].url;
+						else var subsrc = assets.images['TAG_Int'].url;
+						for (i = 0; i < elements.length; i++) {
+							if (elements.eq(i).attr('value')) {
+								if (tagtype == 'TAG_String') savetag.children('span').text(savetag.attr('key') + ': "' + savetag.attr('value') + '"');
+								else if (savetag.children('img.type').attr('src') == assets.images['TAG_String'].url) savetag.children('span').text(savetag.attr('key') + ': ' + savetag.attr('value'));
+								elements.eq(i).children('img.type').attr('src', assets.images[tagtype].url);
+							}
+							else {
+								elements.eq(i).children('img.type').attr('src', assets.images[tagtype].url);
+								subchildren = elements.eq(i).children('ul').children();
+								for (j = 0; j < subchildren.length; j++) subchildren.eq(j).children('img.type').attr('src', subsrc);
+							}
+						}
+					}
+				}
+			}
+			else {
+				if (savetag.attr('value')) {
+					var valueworks = valuecheck(assets.images[tagtype].url, savetag.attr('value'));
+					if (valueworks.success) {
+						if (tagtype == 'TAG_String') savetag.children('span').text(savetag.attr('key') + ': "' + savetag.attr('value') + '"');
+						else if (savetag.children('img.type').attr('src') == assets.images['TAG_String'].url) savetag.children('span').text(savetag.attr('key') + ': ' + savetag.attr('value'));
+						savetag.children('img.type').attr('src', assets.images[tagtype].url);
+					}
+					else alert(valueworks.message);
+				}
+				else {
+					if (tagtype == 'TAG_Byte_Array') var subtype = 'TAG_Byte';
+					else var subtype = 'TAG_Int';
+					var elements = savetag.children('ul').children(), items = [];
+					for (var i = 0; i < elements.length; i++) items[i] = elements.eq(i).attr('value');
+					var valueworks = valuecheck(assets.images[tagtype].url, items.join('\n'));
+					if (valueworks.success) {
+						savetag.children('img.type').attr('src', assets.images[tagtype].url);
+						for (i = 0; i < elements.length; i++) elements.eq(i).children('img.type').attr('src', assets.images[subtype].url)
+					}
+					else alert(valueworks.message);
+				}
+			}
+		}
 	});
 	$('select').selectpicker({style: 'btn btn-primary', menuStyle: 'dropdown-inverse'});
 };
