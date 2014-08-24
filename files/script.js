@@ -19,8 +19,8 @@ var images = {
 	down: '/images/down.png'
 };
 
-$.ajaxTransport('+*', function(options, originalOptions, jqXHR) {
-	if (window.FormData && ((options.dataType && (options.dataType == 'blob' || options.dataType == 'arraybuffer')) || (options.data && ((window.Blob && options.data instanceof Blob) || (window.ArrayBuffer && options.data instanceof ArrayBuffer))))) {
+$.ajaxTransport('+*', function(options, originalOptions, jqXHR) { //allows client to upload the raw binary contents of the NBT file instead of a string
+	if (window.FormData && (options.data && ((window.Blob && options.data instanceof Blob) || (window.ArrayBuffer && options.data instanceof ArrayBuffer)))) {
 		return {
 			send: function(headers, completeCallback) {
 				var xhr = new XMLHttpRequest(),
@@ -48,20 +48,20 @@ $.ajaxTransport('+*', function(options, originalOptions, jqXHR) {
 	}
 });
 
-var gzip;
-function togglecontainer() {
+var gzip; //whether or not the file is gzipped
+function togglecontainer() { //triggered when clicking on a Byte_Array, Int_Array, List, or Compound's images - shows its subelements
 	var container = $(this).parent().children('ul');
 	if (container.is(':visible')) container.hide();
 	else container.show();
 }
 
-function FileDragHover(e) {
+function FileDragHover(e) { //triggered when dragging a file onto or off the filedrag div
 	e.stopPropagation();
 	e.preventDefault();
-	if (e.type == 'dragover') $('div#filedrag').addClass('hover').text('Drop file here');
-	else $('div#filedrag').removeClass('hover').text('Upload');
+	if (e.type == 'dragover') $('div#filedrag').addClass('hover').text('Drop file here'); //if dragged onto
+	else $('div#filedrag').removeClass('hover').text('Upload'); //if dragged off
 }
-function FileSelectHandler(e) {
+function FileSelectHandler(e) { //triggered when drogging a file onto the filedrag div
 	FileDragHover(e);
 	var files;
 	if (e.dataTransfer && e.dataTransfer.files) files = e.dataTransfer.files;
@@ -70,7 +70,7 @@ function FileSelectHandler(e) {
 	reader = new FileReader();
 	reader.name = files[0].name;
 	reader.type = files[0].type;
-	reader.onload = function(e) {
+	reader.onload = function(e) { //when file has been processed into memory, upload it to the server and display it
 		$('div#nbt').children().remove();
 		$('div#nbt').prepend($('<div>').attr('id', 'loading').text('Parsing...'));
 		$.ajax({
@@ -78,29 +78,29 @@ function FileSelectHandler(e) {
 			type: 'POST',
 			dataType: 'json',
 			data: e.target.result,
-			processData: false,
+			processData: false, //so jQuery doesn't coerce it into a string first
 			success: (function() {
 				return function(server_response) {
 					gzip = server_response.gzip;
 					$('li#open').removeClass('open');
 					if (!server_response.success) {
 						$('div#loading').text('COULD NOT PARSE').addClass('error');
-						return;
+						return; //don't try to display an unparseable file
 					}
-					$.ajax({
+					$.ajax({ //fetch the JSON version
 						url: '/nbtjson',
 						dataType: 'json',
 						success: (function() {
 							return function(server_response) {
-								if (!server_response.success) {
+								if (!server_response.success) { //something somewhere went wrong
 									$('div#loading').text('ERROR').addClass('error');
 									return;
 								}
-								$('a#download').attr('download', e.target.name).attr('href', '/download/' + e.target.name + '?gzip=' + String(gzip));
-								$('div#editor').hide();
+								$('a#download').attr('download', e.target.name).attr('href', '/download/' + e.target.name + '?gzip=' + String(gzip)); //download the file with the same name and same compression
+								closeall();
 								$('div#loading').text('Rendering...');
-								setTimeout(function() {
-									$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data)));
+								setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
+									$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data))); //display the JSON
 									if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
 									$('div#nbt>ul>li>ul').show();
 									$('div#loading').remove();
@@ -115,7 +115,12 @@ function FileSelectHandler(e) {
 	reader.readAsArrayBuffer(files[0]);
 }
 
-function renderJSON(data, key) {
+function renderJSON(data, key) { //a recursive function to create an element that represents a tag
+	//key will be undefined if invoked by Byte_Array, Int_Array, or List; only relevant if displaying the child of a compound
+	//generally, the function finds what type the data is, appends an image with the correct icon, appends a span with the value, and adds mouseover edit function handlers
+	//if the data has a key, it adds compound-specific functions (e.g. rename), sets the key attribute, and adds the key to the displayed value
+	//Byte_Array, Int_Array, List, and Compound call this function on each of their children and then put them inside a hidden container
+	//returns the li element
 	var display = $('<li>');
 	switch (data.type) {
 		case 'TAG_Byte':
@@ -151,12 +156,12 @@ function renderJSON(data, key) {
 			addudicons(container);
 			if (key) {
 				display.attr('key', key).attr('type', String(data.value.type)).append($('<img>').addClass('type').attr('src', images.TAG_List).attr('title', 'TAG_List').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showdelete).mouseover(showrename).mouseover(showadd)).append(container);
-				if (coerceto[String(data.value.type)]) display.children('span').mouseover(showcoerce);
+				if (coerceto[String(data.value.type)]) display.children('span').mouseover(showcoerce); //not all lists are coercible (e.g. TAG_Compound)
 				return display;
 			}
 			else {
 				display.attr('type', String(data.value.type)).append($('<img>').addClass('type').attr('src', images.TAG_List).attr('title', 'TAG_List').click(togglecontainer).mouseover(removeicons).mouseover(showdelete).mouseover(showadd)).append(container);
-				if (coerceto[String(data.value.type)]) display.children('img').mouseover(showcoerce);
+				if (coerceto[String(data.value.type)]) display.children('img').mouseover(showcoerce); //not all lists are coercible (e.g. TAG_Compound)
 				return display;
 			}
 		case 'TAG_Compound':
@@ -170,13 +175,13 @@ function renderJSON(data, key) {
 			addudicons(container);
 			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', images.TAG_Int_Array).attr('title', 'TAG_Int_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce)).append(container);
 			else return display.append($('<img>').addClass('type').attr('src', images.TAG_Int_Array).attr('title', 'TAG_Int_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete)).append(container);
-		default:
+		default: //should never trigger, but if it did, it would mess up everything, so better to just quit
 			throw new Error('No such tag: ' + data.type);
 	}
 }
 
-var savetag;
-function removeicons() {
+var savetag; //stores the current element being editted for editting function that are not instantaneous
+function removeicons() { //triggered whenever mousing over an element - removes all the editting function icons if they exist on another element
 	if (editimg && !$(this).is(editimg) && !$(this).children('img.edit').is(editimg)) editimg.remove();
 	if (deleteimg && !$(this).is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) deleteimg.remove();
 	if (renameimg && !$(this).is(renameimg) && !$(this).children('img.rename').is(renameimg)) renameimg.remove();
@@ -186,181 +191,129 @@ function removeicons() {
 	if (downimg && !$(this).is(downimg) && !$(this).children('img.down').is(downimg)) downimg.remove();
 }
 
-var editimg, editor, editororig;
+var editimg, editor, editororig; //editor is the ace editor variable, editororig is the original value of the editor to compare to
 function edit() {
-	closeall();
-	var parent = $(this).parent();
-	if (parent.is('span')) parent = parent.parent();
+	closeall(); //remove all editting windows
+	var parent = $(this).parent(); //parent will be the li element
+	if (parent.is('span')) parent = parent.parent(); //if targetting an element in a List of type Byte_Array or Int_Array, parent will be correct, otherwise parent is incorrectly the span element
 	savetag = parent;
-	switch (parent.children('img.type').attr('src')) {
+	switch (parent.children('img.type').attr('src')) { //different types must be handled differently
+		//generally, store the original value and set the editor text to it, then set the title to say what's being editted
 		case images.TAG_Byte:
-			if (parent.attr('key')) {
-				editororig = parent.attr('value');
-				editor.setValue(parent.attr('value'));
-				$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			}
-			else {
-				editororig = parent.children('span').text();
-				editor.setValue(parent.children('span').text());
-				$('div#editor h3.panel-title').text('Editing TAG_Byte');
-			}
+			editororig = parent.attr('value');
+			editor.setValue(editororig);
+			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
+			else $('div#editor h3.panel-title').text('Editing TAG_Byte');
 			break;
 		case images.TAG_Short:
-			if (parent.attr('key')) {
-				editororig = parent.attr('value');
-				editor.setValue(parent.attr('value'));
-				$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			}
-			else {
-				editororig = parent.children('span').text();
-				editor.setValue(parent.children('span').text());
-				$('div#editor h3.panel-title').text('Editing TAG_Short');
-			}
+			editororig = parent.attr('value');
+			editor.setValue(editororig);
+			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
+			else $('div#editor h3.panel-title').text('Editing TAG_Short');
 			break;
 		case images.TAG_Int:
-			if (parent.attr('key')) {
-				editororig = parent.attr('value');
-				editor.setValue(parent.attr('value'));
-				$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			}
-			else {
-				editororig = parent.children('span').text();
-				editor.setValue(parent.children('span').text());
-				$('div#editor h3.panel-title').text('Editing TAG_Int');
-			}
+			editororig = parent.attr('value');
+			editor.setValue(editororig);
+			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
+			else $('div#editor h3.panel-title').text('Editing TAG_Int');
 			break;
 		case images.TAG_Long:
-			if (parent.attr('key')) {
-				editororig = parent.attr('value');
-				editor.setValue(parent.attr('value'));
-				$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			}
-			else {
-				editororig = parent.children('span').text();
-				editor.setValue(parent.children('span').text());
-				$('div#editor h3.panel-title').text('Editing TAG_Long');
-			}
+			editororig = parent.attr('value');
+			editor.setValue(editororig);
+			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
+			else $('div#editor h3.panel-title').text('Editing TAG_Long');
 			break;
 		case images.TAG_Float:
-			if (parent.attr('key')) {
-				editororig = parent.attr('value');
-				editor.setValue(parent.attr('value'));
-				$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			}
-			else {
-				editororig = parent.children('span').text();
-				editor.setValue(parent.children('span').text());
-				$('div#editor h3.panel-title').text('Editing TAG_Float');
-			}
+			editororig = parent.attr('value');
+			editor.setValue(editororig);
+			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
+			else $('div#editor h3.panel-title').text('Editing TAG_Float');
 			break;
 		case images.TAG_Double:
-			if (parent.attr('key')) {
-				editororig = parent.attr('value');
-				editor.setValue(parent.attr('value'));
-				$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			}
-			else {
-				editororig = parent.children('span').text();
-				editor.setValue(parent.children('span').text());
-				$('div#editor h3.panel-title').text('Editing TAG_Double');
-			}
+			editororig = parent.attr('value');
+			editor.setValue(editororig);
+			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
+			else $('div#editor h3.panel-title').text('Editing TAG_Double');
 			break;
-		case images.TAG_Byte_Array:
-			var editorvalue = '';
-			var elements = parent.children('ul').children();
-			for (var i = 0; i < elements.length; i++) editorvalue += elements.eq(i).text() + '\n';
-			editorvalue = editorvalue.substring(0, editorvalue.length - 1);
-			if (parent.attr('key')) {
-				editororig = editorvalue;
-				editor.setValue(editorvalue);
-				$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			}
-			else {
-				editororig = editorvalue;
-				editor.setValue(editorvalue);
-				$('div#editor h3.panel-title').text('Editing TAG_Byte_Array');
-			}
+		case images.TAG_Byte_Array: //Byte_Array and Int_Array are weird because they have children who determine their value
+			var elements = parent.children('ul').children(), values;
+			for (var i = 0; i < elements.length; i++) values[i] = elements.eq(i).attr('value'); //create an array of all the children
+			editororig = values.join('\n'); //editor should display each child on its own line
+			editor.setValue(editororig);
+			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
+			else $('div#editor h3.panel-title').text('Editing TAG_Byte_Array');
 			break;
 		case images.TAG_String:
-			if (parent.attr('key')) {
-				editororig = parent.attr('value');
-				editor.setValue(parent.attr('value'));
-				$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			}
-			else {
-				editororig = parent.attr('value');
-				editor.setValue(parent.attr('value'));
-				$('div#editor h3.panel-title').text('Editing TAG_Double');
-			}
+			editororig = parent.attr('value');
+			editor.setValue(editororig);
+			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
+			else $('div#editor h3.panel-title').text('Editing TAG_Double');
 			break;
-		case images.TAG_Int_Array:
-			var editorvalue = '';
-			var elements = parent.children('ul').children();
-			for (var i = 0; i < elements.length; i++) editorvalue += elements.eq(i).text() + '\n';
-			editorvalue = editorvalue.substring(0, editorvalue.length - 1);
-			if (parent.attr('key')) {
-				editororig = editorvalue;
-				editor.setValue(editorvalue);
-				$('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			}
-			else {
-				editororig = editorvalue;
-				editor.setValue(editorvalue);
-				$('div#editor h3.panel-title').text('Editing TAG_Int_Array');
-			}
+		case images.TAG_Int_Array: //see case images.TAG_Byte_Array
+			var elements = parent.children('ul').children(), values;
+			for (var i = 0; i < elements.length; i++) values[i] = elements.eq(i).attr('value');
+			editororig = values.join('\n');
+			editor.setValue(editororig);
+			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
+			else $('div#editor h3.panel-title').text('Editing TAG_Int_Array');
 			break;
 		default:
 			throw new Error('No such tag: ' + parent.children('img.type').attr('src'));
 	}
 	$('div#editor').show();
-	editor.focus();
+	editor.focus(); //target editor
 }
-function showedit() {
-	if (!$(this).is(editimg) && !$(this).children('img.edit').is(editimg)) {
-		editimg = $('<img>').addClass('edit').attr('src', images.edit).attr('title', 'Edit value').click(edit);
-		if ($(this).is('img')) $(this).after(editimg);
-		else $(this).append(editimg);
+function showedit() { //triggered when mousing over an edittable element - shows the edit icon
+	if (!$(this).is(editimg) && !$(this).children('img.edit').is(editimg)) { //if this isn't already displaying the edit icon
+		editimg = $('<img>').addClass('edit').attr('src', images.edit).attr('title', 'Edit value').click(edit); //create an editimg
+		if ($(this).is('img')) $(this).after(editimg); //for List elements with children, there is no span, so the mouseover is on the img element; add it after the image
+		else $(this).append(editimg); //otherwise, append it inside the span
 	}
 }
-function valuecheck(type, value) {
+function valuecheck(type, value) { //used to check if the provided value (as a string) is valid for the data type
+	//returns an object, where success says whether or not it worked, message is the error message, and value is the value to save
 	switch (type) {
 		case images.TAG_Byte:
-			value = Number(value);
+			value = Number(value); //convert value to a number
+			//if value is out of range or value cannot be made into a number or it was '' (which becomes 0) or it is not an integer, it fails
 			if (value < -128 || value > 127 || isNaN(value) || value == '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Byte's range"};
-			return {success: true, value: value};
-		case images.TAG_Short:
+			return {success: true, value: String(value)};
+		case images.TAG_Short: //see TAG_Byte
 			value = Number(value);
 			if (value < -32768 || value > 32767 || isNaN(value) || value == '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Short's range"};
-			return {success: true, value: value};
-		case images.TAG_Int:
+			return {success: true, value: String(value)};
+		case images.TAG_Int: //see TAG_Byte
 			value = Number(value);
 			if (value < -2147483648 || value > 2147483647 || isNaN(value) || value == '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Int's range"};
-			return {success: true, value: value};
+			return {success: true, value: String(value)};
 		case images.TAG_Long:
-			var bn = new BigNumber(value);
+			var bn = new BigNumber(value); //as longs can be larger than JavaScript variables, convert them to a BigNumber object
+			//if value is not an integer or it was not a valid number string, it fails
 			if (value.indexOf('.') > -1 || (!bn.compare(new BigNumber(0)) && value != '0')) return {success: false, message: value + " is out of TAG_Long's range"};
-			if (value[0] == '-') {
-				bn = new BigNumber(value.substring(1));
+			if (value[0] == '-') { //if value is negative, convert it to positive to resolve a BigNumber bug
+				bn = new BigNumber(value.substring(1)); //omit the negative sign
+				//if value is too small, it fails
 				if (bn.compare(new BigNumber('9223372036854775808')) == 1) return {success: false, message: value + " is out of TAG_Long's range"};
 			}
+			//if value is too large, it fails
 			else if (bn.compare(new BigNumber('9223372036854775807')) == 1) return {success: false, message: value + " is out of TAG_Long's range"};
 			return {success: true, value: String(bn)};
-		case images.TAG_Float:
+		case images.TAG_Float: //value fails if it cannot be turned into a number or is '' (which becomes 0 when converted)
 			if (isNaN(Number(value)) || value == '') return {success: false, message: 'NaN'};
-			return {success: true, value: Number(value)};
-		case images.TAG_Double:
+			return {success: true, value: String(Number(value))};
+		case images.TAG_Double: //see case images.TAG_Float
 			if (isNaN(Number(value)) || value == '') return {success: false, message: 'NaN'};
-			return {success: true, value: Number(value)};
-		case images.TAG_Byte_Array:
+			return {success: true, value: String(Number(value))};
+		case images.TAG_Byte_Array: //test each byte, if any fail it all fails
 			var values = value.split('\n');
 			for (var i = 0; i < values.length; i++) {
 				if (!(valuecheck(images.TAG_Byte, values[i]).success)) return {success: false, message: values[i] + ' (element ' + String(i + 1) + ") is out of TAG_Byte's range"};
 			}
 			return {success: true, value: values};
-		case images.TAG_String:
+		case images.TAG_String: //if it is longer than TAG_Short's max value, it fails
 			if (value.length > 32767) return {success: false, message: value + " is longer than 32767 characters"};
 			return {success: true, value: '"' + value + '"'};
-		case images.TAG_Int_Array:
+		case images.TAG_Int_Array: //see case images.TAG_Byte_Array
 			var values = value.split('\n');
 			for (var i = 0; i < values.length; i++) {
 				if (!(valuecheck(images.TAG_Int, values[i]).success)) return {success: false, message: values[i] + ' (element ' + String(i + 1) + ") is out of TAG_Int's range"};
@@ -371,43 +324,45 @@ function valuecheck(type, value) {
 	}
 }
 function save() { //no server code yet
-	if ($(this).hasClass('btn-info')) {
+	if ($(this).hasClass('btn-info')) { //if it was actually changed
 		var savetype = savetag.children('img.type').attr('src');
 		var editorvalue = editor.getValue();
-		var valueworks = valuecheck(savetype, editorvalue);
-		if (valueworks.success) {
-			if (savetype == images.TAG_Byte_Array || savetype == images.TAG_Int_Array) {
+		var valueworks = valuecheck(savetype, editorvalue); //check the value
+		if (valueworks.success) { //if it worked
+			if (savetype == images.TAG_Byte_Array || savetype == images.TAG_Int_Array) { //if it is a Byte_Array or Int_Array
 				if (savetype == images.TAG_Byte_Array) nbttype = 'TAG_Byte';
 				else nbttype = 'TAG_Int';
 				var container = savetag.children('ul');
-				container.children().remove();
+				container.children().remove(); //remove old children
+				//iterate over every element and append the li to the container
 				for (var i = 0; i < valueworks.value.length; i++) container.append(renderJSON({type: nbttype, value: Number(valueworks.value[i])}, undefined, true));
-				addudicons(container);
+				addudicons(container); //must re-add the ordering icons
 			}
-			else {
-				savetag.attr('value', valueworks.value);
-				if (savetag.attr('key')) savetag.children('span').text(savetag.attr('key') + ': ' + String(valueworks.value));
-				else savetag.children('span').text(String(valueworks.value));
+			else { //otherwise, it is much simpler
+				if (savetype == images.TAG_String) savetag.attr('value', valueworksvalue.substring(1, valueworks.value.length - 1); //get rid of the quotes around a string
+				else savetag.attr('value', valueworks.value); //record new value
+				if (savetag.attr('key')) savetag.children('span').text(savetag.attr('key') + ': ' + valueworks.value); //just change the text, as in renderJSON
+				else savetag.children('span').text(valueworks.value);
 			}
 			closeeditor();
 		}
 		else alert(valueworks.message); //should be cleaned up
 	}
-	else closeeditor();
+	else closeeditor(); //otherwise just close the editor
 }
-function closeeditor() {
+function closeeditor() { //close the editor
 	$('button#save').removeClass('btn-info');
 	$('div#editor').hide();
 }
 
 var deleteimg;
 function deleter() { //no server code yet
-	var parent = $(this).parent();
+	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
-	parent.remove();
-	if (parent.is(savetag) || parent.find(savetag).length) closeall();
+	parent.remove(); //delete the tag
+	if (parent.is(savetag) || parent.find(savetag).length) closeall(); //if we deleted a tag that was being edited, close the edit windows
 }
-function showdelete() {
+function showdelete() { //see showedit()
 	if (!$(this).is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) {
 		deleteimg = $('<img>').addClass('delete').attr('src', images.delete).attr('title', 'Delete tag').click(deleter);
 		if ($(this).is('img')) $(this).after(deleteimg);
