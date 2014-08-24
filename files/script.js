@@ -332,7 +332,7 @@ function edit() {
 				$('div#editor h3.panel-title').text('Editing TAG_Double');
 			}
 			break;
-		case assets.images[tagtype].url:
+		case assets.images['TAG_Int_Array'].url:
 			var editorvalue = '';
 			var elements = parent.children('ul').children();
 			for (var i = 0; i < elements.length; i++) editorvalue += elements.eq(i).text() + '\n';
