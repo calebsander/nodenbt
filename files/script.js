@@ -182,16 +182,16 @@ function renderJSON(data, key) { //a recursive function to create an element tha
 
 var savetag; //stores the current element being editted for editting function that are not instantaneous
 function removeicons() { //triggered whenever mousing over an element - removes all the editting function icons if they exist on another element
-	if (editimg && !$(this).is(editimg) && !$(this).children('img.edit').is(editimg)) editimg.remove();
-	if (deleteimg && !$(this).is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) deleteimg.remove();
-	if (renameimg && !$(this).is(renameimg) && !$(this).children('img.rename').is(renameimg)) renameimg.remove();
-	if (addimg && !$(this).is(addimg) && !$(this).children('img.add').is(addimg)) addimg.remove();
-	if (coerceimg && !$(this).is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) coerceimg.remove();
-	if (upimg && !$(this).is(upimg) && !$(this).children('img.up').is(upimg)) upimg.remove();
-	if (downimg && !$(this).is(downimg) && !$(this).children('img.down').is(downimg)) downimg.remove();
+	if (!$(this).is(editimg) && !$(this).children('img.edit').is(editimg)) editimg.detach();
+	if (!$(this).is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) deleteimg.detach();
+	if (!$(this).is(renameimg) && !$(this).children('img.rename').is(renameimg)) renameimg.detach();
+	if (!$(this).is(addimg) && !$(this).children('img.add').is(addimg)) addimg.detach();
+	if (!$(this).is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) coerceimg.detach();
+	if (!$(this).is(upimg) && !$(this).children('img.up').is(upimg)) upimg.detach();
+	if (!$(this).is(downimg) && !$(this).children('img.down').is(downimg)) downimg.detach();
 }
 
-var editimg, editor, editororig; //editor is the ace editor variable, editororig is the original value of the editor to compare to
+var editor, editororig; //editor is the ace editor variable, editororig is the original value of the editor to compare to
 function edit() {
 	closeall(); //remove all editting windows
 	var parent = $(this).parent(); //parent will be the li element
@@ -263,9 +263,9 @@ function edit() {
 	$('div#editor').show();
 	editor.focus(); //target editor
 }
+var editimg = $('<img>').addClass('edit').attr('src', images.edit).attr('title', 'Edit value').click(edit); //image element with the edit icon
 function showedit() { //triggered when mousing over an edittable element - shows the edit icon
 	if (!$(this).is(editimg) && !$(this).children('img.edit').is(editimg)) { //if this isn't already displaying the edit icon
-		editimg = $('<img>').addClass('edit').attr('src', images.edit).attr('title', 'Edit value').click(edit); //create an editimg
 		if ($(this).is('img')) $(this).after(editimg); //for List elements with children, there is no span, so the mouseover is on the img element; add it after the image
 		else $(this).append(editimg); //otherwise, append it inside the span
 	}
@@ -339,7 +339,7 @@ function save() { //no server code yet
 				addudicons(container); //must re-add the ordering icons
 			}
 			else { //otherwise, it is much simpler
-				if (savetype == images.TAG_String) savetag.attr('value', valueworksvalue.substring(1, valueworks.value.length - 1); //get rid of the quotes around a string
+				if (savetype == images.TAG_String) savetag.attr('value', valueworksvalue.substring(1, valueworks.value.length - 1)); //get rid of the quotes around a string
 				else savetag.attr('value', valueworks.value); //record new value
 				if (savetag.attr('key')) savetag.children('span').text(savetag.attr('key') + ': ' + valueworks.value); //just change the text, as in renderJSON
 				else savetag.children('span').text(valueworks.value);
@@ -355,46 +355,44 @@ function closeeditor() { //close the editor
 	$('div#editor').hide();
 }
 
-var deleteimg;
 function deleter() { //no server code yet
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
 	parent.remove(); //delete the tag
 	if (parent.is(savetag) || parent.find(savetag).length) closeall(); //if we deleted a tag that was being edited, close the edit windows
 }
+var deleteimg = $('<img>').addClass('delete').attr('src', images.delete).attr('title', 'Delete tag').click(deleter);
 function showdelete() { //see showedit()
 	if (!$(this).is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) {
-		deleteimg = $('<img>').addClass('delete').attr('src', images.delete).attr('title', 'Delete tag').click(deleter);
 		if ($(this).is('img')) $(this).after(deleteimg);
 		else $(this).append(deleteimg);
 	}
 }
 
-var renameimg, renameorig;
+var renameorig; //renameorig is the original tag name to compare to
 function rename() {
-	closeall();
-	var parent = $(this).parent();
+	closeall(); //don't want to be editting anything else at the same time
+	var parent = $(this).parent(); //seet edit()
 	if (parent.is('span')) parent = parent.parent();
-	savetag = parent;
+	savetag = parent; //see edit()
 	newtag = false;
-	renameorig = parent.attr('key');
-	$('div#tagname h3.panel-title').text('Renaming ' + renameorig);
-	$('input#nameinput').keydown();
-	$('div#tagname').show();
-	$('input#nameinput').focus();
+	renameorig = parent.attr('key'); //store originalname
+	$('div#tagname h3.panel-title').text('Renaming ' + renameorig); //display what is being renamed
+	$('input#nameinput').keydown(); //trigger the code that checks to see if the new name is valid (make sure no other key is named '')
+	$('div#tagname').show(); //open the renaming window
+	$('input#nameinput').focus(); //target the name input for text input
 }
-function showrename() {
+var renameimg = $('<img>').addClass('rename').attr('src', images.rename).attr('title', 'Rename tag').click(rename);
+function showrename() { //see showedit()
 	if (!$(this).is(renameimg) && !$(this).children('img.rename').is(renameimg)) {
-		renameimg = $('<img>').addClass('rename').attr('src', images.rename).attr('title', 'Rename tag').click(rename);
 		if ($(this).is('img')) $(this).after(renameimg);
 		else $(this).append(renameimg);
 	}
 }
 function savename() { //no server code yet
-	if ($('button#namesave').hasClass('btn-success')) {
-		var newname = $('input#nameinput').val();
-		var savetype = savetag.children('img.type').attr('src');
-		savetag.attr('key', newname);
+	if ($('button#namesave').hasClass('btn-success')) { //if the name is invalid, do nothing
+		var newname = $('input#nameinput').val(); //fetch the new name
+		savetag.attr('key', newname); //save the new key
 		if (savetag.attr('value')) savetag.children('span').text(newname + ': ' + savetag.attr('value'));
 		else savetag.children('span').text(newname + ':');
 		closename();
@@ -406,7 +404,7 @@ function closename() {
 	$('div#tagname').hide();
 }
 
-var addimg, newtag, tagtype, defaults = {
+var newtag, tagtype, defaults = {
 	TAG_Byte: 0,
 	TAG_Short: 0,
 	TAG_Int: 0,
@@ -448,9 +446,9 @@ function add() { //no server code yet
 	}
 	else createtag(parent.attr('type'));
 }
+var addimg = $('<img>').addClass('add').attr('src', images.add).attr('title', 'Add tag').click(add);
 function showadd() {
 	if (!$(this).is(addimg) && !$(this).children('img.add').is(addimg)) {
-		addimg = $('<img>').addClass('add').attr('src', images.add).attr('title', 'Add tag').click(add);
 		if ($(this).is('img')) $(this).after(addimg);
 		else $(this).append(addimg);
 	}
@@ -465,7 +463,7 @@ function closetype() {
 	$('div#tagtype').hide();
 }
 
-var coerceimg, coerceto = {
+var coerceto = {
 	'null': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_Byte_Array', 'TAG_String', 'TAG_List', 'TAG_Compound', 'TAG_Int_Array'],
 	'TAG_Byte': ['TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_String'],
 	'TAG_Short': ['TAG_Byte', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_String'],
@@ -498,9 +496,9 @@ function coerce() { //no client or server code yet
 	else $('div#tagtype h3.panel-title').text('Converting ' + type);
 	$('div#tagtype').show();
 }
+var coerceimg = $('<img>').addClass('coerce').attr('src', images.coerce).attr('title', 'Convert type').click(coerce);
 function showcoerce() {
 	if (!$(this).is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) {
-		coerceimg = $('<img>').addClass('coerce').attr('src', images.coerce).attr('title', 'Convert type').click(coerce);
 		if ($(this).is('img')) $(this).after(coerceimg);
 		else $(this).append(coerceimg);
 	}
@@ -516,7 +514,6 @@ function addudicons(list) {
 		if (i != elements.length - 1) element.mouseover(showdown);
 	}
 }
-var upimg;
 function up() {
 	var parent = $(this).parent();
 	if (parent.is('span')) parent = parent.parent();
@@ -528,15 +525,13 @@ function up() {
 	parent.children('img.type').mouseover();
 	parent.children('span').mouseover();
 }
+var upimg = $('<img>').addClass('up').attr('src', images.up).attr('title', 'Move up').click(up);
 function showup() {
 	if (!$(this).is(upimg) && !$(this).children('img.up').is(upimg)) {
-		upimg = $('<img>').addClass('up').attr('src', images.up).attr('title', 'Move up').click(up);
 		if ($(this).is('img')) $(this).after(upimg);
 		else $(this).append(upimg);
 	}
 }
-
-var downimg;
 function down() {
 	var parent = $(this).parent();
 	if (parent.is('span')) parent = parent.parent();
@@ -548,9 +543,9 @@ function down() {
 	parent.children('img.type').mouseover();
 	parent.children('span').mouseover();
 }
+var downimg = $('<img>').addClass('down').attr('src', images.down).attr('title', 'Move down').click(down);
 function showdown() {
 	if (!$(this).is(downimg) && !$(this).children('img.down').is(downimg)) {
-		downimg = $('<img>').addClass('down').attr('src', images.down).attr('title', 'Move down').click(down);
 		if ($(this).is('img')) $(this).after(downimg);
 		else $(this).append(downimg);
 	}
