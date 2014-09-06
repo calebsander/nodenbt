@@ -185,13 +185,13 @@ var savetag; //stores the current element being editted for editting function th
 var newtag; //whether or not a new tag is being added - used to change what happens when entering a new tag type or name
 
 function removeicons() { //triggered whenever mousing over an element - removes all the editting function icons if they exist on another element
-	if (!$(this).is(editimg) && !$(this).children('img.edit').is(editimg)) editimg.detach();
-	if (!$(this).is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) deleteimg.detach();
-	if (!$(this).is(renameimg) && !$(this).children('img.rename').is(renameimg)) renameimg.detach();
-	if (!$(this).is(addimg) && !$(this).children('img.add').is(addimg)) addimg.detach();
-	if (!$(this).is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) coerceimg.detach();
-	if (!$(this).is(upimg) && !$(this).children('img.up').is(upimg)) upimg.detach();
-	if (!$(this).is(downimg) && !$(this).children('img.down').is(downimg)) downimg.detach();
+	if (!$(this).parent().children('img.edit').is(editimg) && !$(this).children('img.edit').is(editimg)) editimg.detach();
+	if (!$(this).parent().children('img.delete').is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) deleteimg.detach();
+	if (!$(this).parent().children('img.rename').is(renameimg) && !$(this).children('img.rename').is(renameimg)) renameimg.detach();
+	if (!$(this).parent().children('img.add').is(addimg) && !$(this).children('img.add').is(addimg)) addimg.detach();
+	if (!$(this).parent().children('img.coerce').is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) coerceimg.detach();
+	if (!$(this).parent().children('img.up').is(upimg) && !$(this).children('img.up').is(upimg)) upimg.detach();
+	if (!$(this).parent().children('img.down').is(downimg) && !$(this).children('img.down').is(downimg)) downimg.detach();
 }
 
 var coerceto = { //stores possible new tag types for conversion (not all may actually work)
@@ -288,7 +288,7 @@ function edit() {
 }
 var editimg = $('<img>').addClass('edit').attr('src', images.edit).attr('title', 'Edit value').click(edit); //image element with the edit icon
 function showedit() { //triggered when mousing over an edittable element - shows the edit icon
-	if (!$(this).is(editimg) && !$(this).children('img.edit').is(editimg)) { //if this isn't already displaying the edit icon
+	if (!$(this).parent().children('img.edit').is(editimg) && !$(this).children('img.edit').is(editimg)) { //if this isn't already displaying the edit icon
 		if ($(this).is('img')) $(this).after(editimg); //for List elements with children, there is no span, so the mouseover is on the img element; add it after the image
 		else $(this).append(editimg); //otherwise, append it inside the span
 	}
@@ -386,7 +386,7 @@ function deleter() { //no server code yet
 }
 var deleteimg = $('<img>').addClass('delete').attr('src', images.delete).attr('title', 'Delete tag').click(deleter);
 function showdelete() { //see showedit()
-	if (!$(this).is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) {
+	if (!$(this).parent().children('img.delete').is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) {
 		if ($(this).is('img')) $(this).after(deleteimg);
 		else $(this).append(deleteimg);
 	}
@@ -407,7 +407,7 @@ function rename() {
 }
 var renameimg = $('<img>').addClass('rename').attr('src', images.rename).attr('title', 'Rename tag').click(rename);
 function showrename() { //see showedit()
-	if (!$(this).is(renameimg) && !$(this).children('img.rename').is(renameimg)) {
+	if (!$(this).parent().children('img.rename').is(renameimg) && !$(this).children('img.rename').is(renameimg)) {
 		if ($(this).is('img')) $(this).after(renameimg);
 		else $(this).append(renameimg);
 	}
@@ -466,7 +466,7 @@ function add() { //no server code yet
 }
 var addimg = $('<img>').addClass('add').attr('src', images.add).attr('title', 'Add tag').click(add);
 function showadd() { //see showedit()
-	if (!$(this).is(addimg) && !$(this).children('img.add').is(addimg)) {
+	if (!$(this).parent().children('img.add').is(addimg) && !$(this).children('img.add').is(addimg)) {
 		if ($(this).is('img')) $(this).after(addimg);
 		else $(this).append(addimg);
 	}
@@ -504,7 +504,7 @@ function coerce() { //no server code yet
 }
 var coerceimg = $('<img>').addClass('coerce').attr('src', images.coerce).attr('title', 'Convert type').click(coerce);
 function showcoerce() { //see showedit()
-	if (!$(this).is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) {
+	if (!$(this).parent().children('img.coerce').is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) {
 		if ($(this).is('img')) $(this).after(coerceimg);
 		else $(this).append(coerceimg);
 	}
@@ -533,7 +533,7 @@ function up() { //no server code yet
 }
 var upimg = $('<img>').addClass('up').attr('src', images.up).attr('title', 'Move up').click(up);
 function showup() { //see showedit()
-	if (!$(this).is(upimg) && !$(this).children('img.up').is(upimg)) {
+	if (!$(this).parent().children('img.up').is(upimg) && !$(this).children('img.up').is(upimg)) {
 		if ($(this).is('img')) $(this).after(upimg);
 		else $(this).append(upimg);
 	}
@@ -550,7 +550,7 @@ function down() { //no server code yet; see up()
 }
 var downimg = $('<img>').addClass('down').attr('src', images.down).attr('title', 'Move down').click(down);
 function showdown() { //see showedit()
-	if (!$(this).is(downimg) && !$(this).children('img.down').is(downimg)) {
+	if (!$(this).parent().children('img.down').is(downimg) && !$(this).children('img.down').is(downimg)) {
 		if ($(this).is('img')) $(this).after(downimg);
 		else $(this).append(downimg);
 	}
