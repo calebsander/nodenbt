@@ -58,9 +58,8 @@ function FileDragHover(e) { //triggered when dragging a file onto or off the fil
 }
 function FileSelectHandler(e) { //triggered when drogging a file onto the filedrag div
 	FileDragHover(e);
-	var files;
-	if (e.dataTransfer && e.dataTransfer.files) files = e.dataTransfer.files;
-	if (e.target && e.target.files) files = e.target.files;
+	if (e.originalEvent.dataTransfer && e.originalEvent.dataTransfer.files) var files = e.originalEvent.dataTransfer.files;
+	else return;
 	var reader;
 	reader = new FileReader();
 	reader.name = files[0].name;
@@ -563,10 +562,7 @@ function closeall() { //closes all editing windows
 }
 
 window.onload = function() { //mess with elements when they have all loaded
-	var filedrag = $('div#filedrag')[0]; //getting DOM element for event handlers
-	filedrag.addEventListener('dragover', FileDragHover);
-	filedrag.addEventListener('dragleave', FileDragHover);
-	filedrag.addEventListener('drop', FileSelectHandler);
+	$('div#filedrag').on('dragover', FileDragHover).on('dragover', FileDragHover).on('drop', FileSelectHandler);
 	
 	editor = ace.edit('ace'); //make a new ace editor
 	editor.setShowPrintMargin(false); //don't show an annoying vertical line
