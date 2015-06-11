@@ -3,8 +3,8 @@ var zlib = require('zlib');
 var util = require('util');
 var bn = require('./BigNumber.js');
 var http = require('http');
-var mime = require('mime');
 var url = require('url');
+var mime = require('./node_modules/fileserver/node_modules/mime');
 
 var PORT = 8080;
 
@@ -77,7 +77,7 @@ function readByte_Array(offset) {
 	var originaloffset = offset;
 	var bytesint = readInt(offset);
 	offset += bytesint.length;
-	
+
 	var Byte_Array = [];
 	var element;
 	for (var i = 0; i < sizeint.value; i++) {
@@ -85,7 +85,7 @@ function readByte_Array(offset) {
 		Byte_Array[i] = element.value;
 		offset += element.length;
 	}
-	
+
 	return {
 		value: Byte_Array,
 		length: offset - originaloffset
@@ -107,7 +107,7 @@ function readString(offset) {
 function readList(offset) {
 	var originaloffset = offset;
 	var readFunction, readType;
-	
+
 	var typebyte = readByte(offset);
 	offset += typebyte.length;
 	switch (typebyte.value) {
@@ -162,10 +162,10 @@ function readList(offset) {
 		default:
 			throw new Error('No such tag: ' + String(typebyte.value));
 	}
-	
+
 	var sizeint = readInt(offset);
 	offset += sizeint.length;
-	
+
 	var List = [];
 	var element;
 	for (var i = 0; i < sizeint.value; i++) {
@@ -173,7 +173,7 @@ function readList(offset) {
 		List[i] = element.value;
 		offset += element.length;
 	}
-	
+
 	return {
 		value: {
 			type: readType,
@@ -187,13 +187,13 @@ function readCompound(offset) {
 	var originaloffset = offset;
 	var readType, readName, readValue;
 	var Compound = {};
-	
+
 	var typebyte = readByte(offset);
 	offset += typebyte.length;
 	while (typebyte.value != TAG_End) {
 		readName = readString(offset);
 		offset += readName.length;
-		
+
 		switch (typebyte.value) {
 			case TAG_Byte:
 				readValue = readByte(offset);
@@ -250,11 +250,11 @@ function readCompound(offset) {
 			};
 		}
 		offset += readValue.length;
-		
+
 		typebyte = readByte(offset);
 		offset += typebyte.length;
 	}
-	
+
 	return {
 		value: Compound,
 		length: offset - originaloffset
@@ -265,7 +265,7 @@ function readInt_Array(offset) {
 	var originaloffset = offset;
 	var sizeint = readInt(offset);
 	offset += sizeint.length;
-	
+
 	var IntArray = [];
 	var element;
 	for (var i = 0; i < sizeint.value; i++) {
@@ -273,7 +273,7 @@ function readInt_Array(offset) {
 		IntArray[i] = element.value;
 		offset += element.length;
 	}
-	
+
 	return {
 		value: IntArray,
 		length: offset - originaloffset
@@ -389,7 +389,7 @@ function writeList(value) {
 			throw new Error('No such tag: ' + value.type);
 	}
 	writeByte(writeType);
-	
+
 	writeInt(value.list.length);
 	for (var i = 0; i < value.list.length; i++) writeFunction(value.list[i]);
 }
@@ -456,7 +456,7 @@ function writeCompound(value) {
 				throw new Error('No such tag: ' + value[i].type);
 		}
 	}
-	
+
 	writeByte(TAG_End);
 }
 
@@ -468,9 +468,11 @@ function writeInt_Array(value) {
 //HTTP SERVER
 
 function return404(res) {
+	res.writeHead(404);
 	res.setHeader('content-type', 'text/plain');
 	res.end('404! No such page or method.');
 }
+var serv = require('./node_modules/fileserver/fileserver.js')('./files', true, return404);
 
 http.createServer(function(req, res) {
 	console.log(req.url);
@@ -582,50 +584,6 @@ http.createServer(function(req, res) {
 			res.end(JSON.stringify({success: false, message: 'no data'}));
 		}
 	}
-	else {
-		var filename = './files' + req.url;
-		if (filename.indexOf('..') > -1) return404(res);
-		else if (filename.lastIndexOf('.') == 0) {
-			if (filename[filename.length - 1] == '/') {
-				var tryfile = false;
-				filename += 'index.html';
-			}
-			else {
-				filename += '/index.html';
-				var tryfile = true;
-			}
-			fs.readFile(filename, function(err, data) {
-				if (err) {
-					if (tryfile) {
-						filename = filename.substr(0, filename.length - 11) + '.html';
-						fs.readFile(filename, function(err, data) {
-							if (err) return404(res);
-							else {
-								var extension = filename.substring(filename.lastIndexOf('.') + 1, filename.length);
-								res.setHeader('content-type', mime.lookup(extension));
-								res.end(data);
-							}
-						});
-					}
-					else return404(res);
-				}
-				else {
-					var extension = filename.substring(filename.lastIndexOf('.') + 1, filename.length);
-					res.setHeader('content-type', mime.lookup(extension));
-					res.end(data);
-				}
-			});
-		}
-		else {
-			fs.readFile(filename, function(err, data) {
-				if (err) return404(res);
-				else {
-					var extension = filename.substring(filename.lastIndexOf('.') + 1, filename.length);
-					res.setHeader('content-type', mime.lookup(extension));
-					res.end(data);
-				}
-			});
-		}
-	}
+	else serv(res, req.url);
 }).listen(PORT);
 console.log('Server listening on port ' + String(PORT) + '\n');
