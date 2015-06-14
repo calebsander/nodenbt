@@ -115,6 +115,9 @@ button#save {
   left:15px;
   border-radius:0px 4px 0px 0px;
 }
+button#save:hover {
+  z-index:0;
+}
 div#tagname, div#tagtype {
   position:fixed;
   top:75px;
@@ -140,7 +143,6 @@ button#namesave.blur {
   background-color:#e74c3c !important;
 }
 button#typesave {
-  top:-10px;
   height:41px;
   border:none;
   z-index:100;

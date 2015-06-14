@@ -6,8 +6,9 @@ var http = require('http');
 var url = require('url');
 var mime = require('./node_modules/fileserver/node_modules/mime');
 
-var PORT = 8080;
+var PORT = 8080; //port to host the server on
 
+//NBT tag ID constants
 var TAG_End = 0x00;
 var TAG_Byte = 0x01;
 var TAG_Short = 0x02;
@@ -20,9 +21,17 @@ var TAG_String = 0x08;
 var TAG_List = 0x09;
 var TAG_Compound = 0x0A;
 var TAG_Int_Array = 0x0B;
+
+/*
+	readnbt - the raw file data to be read
+	nbtobject - a JavaScript object representing the data
+	writenbt - raw file data to be written
+	gzip - whether the file was compressed
+	modified - whether the file has been modified since the read
+*/
 var readnbt, nbtobject, writenbt, gzip, modified;
 
-//READ NBT
+//READ NBT - read a certain tag at a certain offset in the Buffer
 
 function readEnd(offset) {
 	return {
@@ -54,7 +63,7 @@ function readInt(offset) {
 
 function readLong(offset) {
 	return {
-		value: String(new bn(readInt(offset)).multiply(4294967296).add(readInt(offset + 4))),
+		value: String(new bn(readInt(offset)).multiply(4294967296).add(readInt(offset + 4))), //JavaScript can't natively store 64-bit integers
 		length: 8
 	};
 }
@@ -75,12 +84,12 @@ function readDouble(offset) {
 
 function readByte_Array(offset) {
 	var originaloffset = offset;
-	var bytesint = readInt(offset);
+	var bytesint = readInt(offset); //read the length of the array
 	offset += bytesint.length;
 
 	var Byte_Array = [];
 	var element;
-	for (var i = 0; i < sizeint.value; i++) {
+	for (var i = 0; i < sizeint.value; i++) { //read each element and add it to the array
 		element = readByte(offset);
 		Byte_Array[i] = element.value;
 		offset += element.length;
@@ -94,7 +103,7 @@ function readByte_Array(offset) {
 
 function readString(offset) {
 	var originaloffset = offset;
-	var bytesshort = readShort(offset);
+	var bytesshort = readShort(offset); //read the length of the string
 	offset += bytesshort.length;
 	var resultString = readnbt.toString('utf8', offset, offset + bytesshort.value);
 	offset += bytesshort.value;
@@ -110,7 +119,82 @@ function readList(offset) {
 
 	var typebyte = readByte(offset);
 	offset += typebyte.length;
-	switch (typebyte.value) {
+	var typeInfo = extractType(typebyte);
+
+	var sizeint = readInt(offset); //read the length of the list
+	offset += sizeint.length;
+
+	var List = [];
+	var element;
+	for (var i = 0; i < sizeint.value; i++) { //reach each element and add it to the list
+		element = typeInfo.readFunction(offset);
+		List[i] = element.value;
+		offset += element.length;
+	}
+
+	return {
+		value: {
+			type: typeInfo.readType,
+			list: List
+		},
+		length: offset - originaloffset
+	};
+}
+
+function readCompound(offset) {
+	var originaloffset = offset;
+	var readName, typeInfo, readValue;
+	var Compound = {};
+
+	var typebyte = readByte(offset);
+	offset += typebyte.length;
+	while (typebyte.value != TAG_End) { //keep reading until finding an End tag
+		readName = readString(offset);
+		offset += readName.length;
+		typeInfo = extractType(typebyte);
+		readValue = typeInfo.readFunction(offset);
+		if (Compound[readName.value]) throw new Error('Tag ' + readName.value + ' already exists');
+		else {
+			Compound[readName.value] = {
+				type: typeInfo.readType,
+				value: readValue.value
+			};
+		}
+		offset += readValue.length;
+
+		typebyte = readByte(offset);
+		offset += typebyte.length;
+	}
+
+	return {
+		value: Compound,
+		length: offset - originaloffset
+	};
+}
+
+function readInt_Array(offset) {
+	var originaloffset = offset;
+	var sizeint = readInt(offset);
+	offset += sizeint.length;
+
+	var IntArray = [];
+	var element;
+	for (var i = 0; i < sizeint.value; i++) {
+		element = readInt(offset);
+		IntArray[i] = element.value;
+		offset += element.length;
+	}
+
+	return {
+		value: IntArray,
+		length: offset - originaloffset
+	};
+}
+
+//Select function to read tag and what its type is by the tag ID
+function extractType(typebyte) {
+	var readFunction, readType;
+	switch (typebyte.value) { //choose which read function to use based on the type of element
 		case TAG_End:
 			readFunction = readEnd;
 			readType = null;
@@ -162,125 +246,13 @@ function readList(offset) {
 		default:
 			throw new Error('No such tag: ' + String(typebyte.value));
 	}
-
-	var sizeint = readInt(offset);
-	offset += sizeint.length;
-
-	var List = [];
-	var element;
-	for (var i = 0; i < sizeint.value; i++) {
-		element = readFunction(offset);
-		List[i] = element.value;
-		offset += element.length;
-	}
-
 	return {
-		value: {
-			type: readType,
-			list: List
-		},
-		length: offset - originaloffset
+		readFunction: readFunction,
+		readType: readType
 	};
 }
 
-function readCompound(offset) {
-	var originaloffset = offset;
-	var readType, readName, readValue;
-	var Compound = {};
-
-	var typebyte = readByte(offset);
-	offset += typebyte.length;
-	while (typebyte.value != TAG_End) {
-		readName = readString(offset);
-		offset += readName.length;
-
-		switch (typebyte.value) {
-			case TAG_Byte:
-				readValue = readByte(offset);
-				readType = 'TAG_Byte';
-				break;
-			case TAG_Short:
-				readValue = readShort(offset);
-				readType = 'TAG_Short';
-				break;
-			case TAG_Int:
-				readValue = readInt(offset);
-				readType = 'TAG_Int';
-				break;
-			case TAG_Long:
-				readValue = readLong(offset);
-				readType = 'TAG_Long';
-				break;
-			case TAG_Float:
-				readValue = readFloat(offset);
-				readType = 'TAG_Float';
-				break;
-			case TAG_Double:
-				readValue = readDouble(offset);
-				readType = 'TAG_Double';
-				break;
-			case TAG_Byte_Array:
-				readValue = readByte_Array(offset);
-				readType = 'TAG_Byte_Array';
-				break;
-			case TAG_String:
-				readValue = readString(offset);
-				readType = 'TAG_String';
-				break;
-			case TAG_List:
-				readValue = readList(offset);
-				readType = 'TAG_List';
-				break;
-			case TAG_Compound:
-				readValue = readCompound(offset);
-				readType = 'TAG_Compound';
-				break;
-			case TAG_Int_Array:
-				readValue = readInt_Array(offset);
-				readType = 'TAG_Int_Array';
-				break;
-			default:
-				throw new Error('No such tag: ' + String(typebyte.value));
-		}
-		if (Compound[readName.value]) throw new Error('Tag ' + readName.value + ' already exists');
-		else {
-			Compound[readName.value] = {
-				type: readType,
-				value: readValue.value
-			};
-		}
-		offset += readValue.length;
-
-		typebyte = readByte(offset);
-		offset += typebyte.length;
-	}
-
-	return {
-		value: Compound,
-		length: offset - originaloffset
-	};
-}
-
-function readInt_Array(offset) {
-	var originaloffset = offset;
-	var sizeint = readInt(offset);
-	offset += sizeint.length;
-
-	var IntArray = [];
-	var element;
-	for (var i = 0; i < sizeint.value; i++) {
-		element = readInt(offset);
-		IntArray[i] = element.value;
-		offset += element.length;
-	}
-
-	return {
-		value: IntArray,
-		length: offset - originaloffset
-	};
-}
-
-//WRITE NBT
+//WRITE NBT - write a certain tag to the end of the Buffer
 
 function writeByte(value) {
 	if (value < -128 || value > 127) throw new Error('out of range: ' + String(value));
@@ -481,7 +453,7 @@ http.createServer(function(req, res) {
 		if (nbtobject) res.end(JSON.stringify({success: true, data: nbtobject}));
 		else res.end(JSON.stringify({success: false, message: 'no data'}));
 	}
-	else if (req.url.substr(0, 7) == '/setnbt') {
+	else if (req.url.substring(0, 8) == '/setnbt/') {
 		var data = '';
 		if (nbtobject) {
 			req.on('data', function(chunk) {

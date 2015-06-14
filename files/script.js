@@ -1,22 +1,22 @@
 var images = { //stores the URL for all image assets
-	TAG_Byte: '/images/TAG_Byte.png',
-	TAG_Short: '/images/TAG_Short.png',
-	TAG_Int: '/images/TAG_Int.png',
-	TAG_Long: '/images/TAG_Long.png',
-	TAG_Float: '/images/TAG_Float.png',
-	TAG_Double: '/images/TAG_Double.png',
-	TAG_Byte_Array: '/images/TAG_Byte_Array.png',
-	TAG_String: '/images/TAG_String.png',
-	TAG_List: '/images/TAG_List.png',
-	TAG_Compound: '/images/TAG_Compound.png',
-	TAG_Int_Array: '/images/TAG_Int_Array.png',
-	edit: '/images/edit.png',
-	delete: '/images/delete.png',
-	rename: '/images/rename.png',
-	add: '/images/add.png',
-	coerce: '/images/coerce.png',
-	up: '/images/up.png',
-	down: '/images/down.png'
+	'TAG_Byte': '/images/TAG_Byte.png',
+	'TAG_Short': '/images/TAG_Short.png',
+	'TAG_Int': '/images/TAG_Int.png',
+	'TAG_Long': '/images/TAG_Long.png',
+	'TAG_Float': '/images/TAG_Float.png',
+	'TAG_Double': '/images/TAG_Double.png',
+	'TAG_Byte_Array': '/images/TAG_Byte_Array.png',
+	'TAG_String': '/images/TAG_String.png',
+	'TAG_List': '/images/TAG_List.png',
+	'TAG_Compound': '/images/TAG_Compound.png',
+	'TAG_Int_Array': '/images/TAG_Int_Array.png',
+	'edit': '/images/edit.png',
+	'delete': '/images/delete.png',
+	'rename': '/images/rename.png',
+	'add': '/images/add.png',
+	'coerce': '/images/coerce.png',
+	'up': '/images/up.png',
+	'down': '/images/down.png'
 };
 
 $.ajaxTransport('+*', function(options, originalOptions, jqXHR) { //allows client to upload the raw binary contents of the NBT file instead of a string
@@ -29,13 +29,13 @@ $.ajaxTransport('+*', function(options, originalOptions, jqXHR) { //allows clien
 					dataType = options.dataType || 'text',
 					data = options.data || null,
 					async = options.async || true;
- 
+
 				xhr.addEventListener('load', function() {
 					var res = {};
 					res[dataType] = xhr.response;
 					completeCallback(xhr.status, xhr.statusText, res, xhr.getAllResponseHeaders());
 				});
- 
+
 				xhr.open(type, url, async);
 				xhr.responseType = dataType;
 				if (data) data = new Uint8Array(data);
@@ -66,6 +66,7 @@ function FileSelectHandler(e) { //triggered when drogging a file onto the filedr
 	reader.type = files[0].type;
 	reader.onload = function(e) { //when file has been processed into memory, upload it to the server and display it
 		$('div#nbt').children().remove();
+		remakeImages();
 		$('div#nbt').prepend($('<div>').attr('id', 'loading').text('Parsing...'));
 		$.ajax({
 			url: '/upload',
@@ -211,6 +212,18 @@ function settypeselect(type) { //used to set the possible values of the tag type
 	typeselect.children().remove(); //remove all the previous options
 	//for each possible coercible value, append a new option to the typeselect
 	for (var i = 0; i < coerceto[type].length; i++) typeselect.append($('<option>').attr('value', coerceto[type][i]).text(coerceto[type][i]));
+	typeselect.select2(); //so it is initialized with an option
+}
+
+//Readds the image click handlers
+function remakeImages() {
+	editimg.off('click').click(edit);
+	deleteimg.off('click').click(deleter);
+	renameimg.off('click').click(rename);
+	addimg.off('click').click(add);
+	coerceimg.off('click').click(coerce);
+	upimg.off('click').click(up);
+	downimg.off('click').click(down);
 }
 
 var editor, editororig; //editor is the ace editor variable, editororig is the original value of the editor to compare to
@@ -285,7 +298,7 @@ function edit() {
 	$('div#editor').show();
 	editor.focus(); //target editor
 }
-var editimg = $('<img>').addClass('edit').attr('src', images.edit).attr('title', 'Edit value').click(edit); //image element with the edit icon
+var editimg = $('<img>').addClass('edit').attr('src', images.edit).attr('title', 'Edit value'); //image element with the edit icon
 function showedit() { //triggered when mousing over an edittable element - shows the edit icon
 	if (!$(this).parent().children('img.edit').is(editimg) && !$(this).children('img.edit').is(editimg)) { //if this isn't already displaying the edit icon
 		if ($(this).is('img')) $(this).after(editimg); //for List elements with children, there is no span, so the mouseover is on the img element; add it after the image
@@ -361,16 +374,16 @@ function save() { //no server code yet
 				addudicons(container); //must re-add the ordering icons
 			}
 			else { //otherwise, it is much simpler
-				if (savetype == images.TAG_String) savetag.attr('value', valueworksvalue.substring(1, valueworks.value.length - 1)); //get rid of the quotes around a string
+				if (savetype == images.TAG_String) savetag.attr('value', valueworks.value.substring(1, valueworks.value.length - 1)); //get rid of the quotes around a string
 				else savetag.attr('value', valueworks.value); //record new value
 				if (savetag.attr('key')) savetag.children('span').text(savetag.attr('key') + ': ' + valueworks.value); //just change the text, as in renderJSON
 				else savetag.children('span').text(valueworks.value);
 			}
+			remakeImages();
 			closeeditor();
 		}
 		else alert(valueworks.message); //should be cleaned up
 	}
-	else closeeditor(); //otherwise just close the editor
 }
 function closeeditor() { //close the editor
 	$('button#save').removeClass('btn-info');
@@ -381,9 +394,10 @@ function deleter() { //no server code yet
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
 	parent.remove(); //delete the tag
+	remakeImages();
 	if (parent.is(savetag) || parent.find(savetag).length) closeall(); //if we deleted a tag that was being edited, close the edit windows
 }
-var deleteimg = $('<img>').addClass('delete').attr('src', images.delete).attr('title', 'Delete tag').click(deleter);
+var deleteimg = $('<img>').addClass('delete').attr('src', images['delete']).attr('title', 'Delete tag');
 function showdelete() { //see showedit()
 	if (!$(this).parent().children('img.delete').is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) {
 		if ($(this).is('img')) $(this).after(deleteimg);
@@ -391,7 +405,7 @@ function showdelete() { //see showedit()
 	}
 }
 
-var renameorig; //renameorig is the original tag name to compare to
+var renameorig; //the original tag name to compare to
 function rename() {
 	closeall(); //don't want to be editting anything else at the same time
 	var parent = $(this).parent(); //seet edit()
@@ -404,7 +418,7 @@ function rename() {
 	$('div#tagname').show(); //open the renaming window
 	$('input#nameinput').focus(); //target the name input for text input
 }
-var renameimg = $('<img>').addClass('rename').attr('src', images.rename).attr('title', 'Rename tag').click(rename);
+var renameimg = $('<img>').addClass('rename').attr('src', images.rename).attr('title', 'Rename tag');
 function showrename() { //see showedit()
 	if (!$(this).parent().children('img.rename').is(renameimg) && !$(this).children('img.rename').is(renameimg)) {
 		if ($(this).is('img')) $(this).after(renameimg);
@@ -418,6 +432,7 @@ function savename() { //no server code yet
 		if (savetag.attr('value')) savetag.children('span').text(newname + ': ' + savetag.attr('value')); //if a tag without children, display the new name and the unchanged value
 		else savetag.children('span').text(newname + ':'); //if the tag has children, just display the new name
 		closename(); //the name input doesn't need to be shown anymore
+		remakeImages();
 	}
 }
 function closename() { //close the name input
@@ -463,7 +478,7 @@ function add() { //no server code yet
 	}
 	else createtag(parent.attr('type')); //otherwise, adding an element to a list; type is implied and name is not applicable, so create it immediately
 }
-var addimg = $('<img>').addClass('add').attr('src', images.add).attr('title', 'Add tag').click(add);
+var addimg = $('<img>').addClass('add').attr('src', images.add).attr('title', 'Add tag');
 function showadd() { //see showedit()
 	if (!$(this).parent().children('img.add').is(addimg) && !$(this).children('img.add').is(addimg)) {
 		if ($(this).is('img')) $(this).after(addimg);
@@ -501,7 +516,7 @@ function coerce() { //no server code yet
 	else $('div#tagtype h3.panel-title').text('Converting ' + type);
 	$('div#tagtype').show(); //open the type input
 }
-var coerceimg = $('<img>').addClass('coerce').attr('src', images.coerce).attr('title', 'Convert type').click(coerce);
+var coerceimg = $('<img>').addClass('coerce').attr('src', images.coerce).attr('title', 'Convert type');
 function showcoerce() { //see showedit()
 	if (!$(this).parent().children('img.coerce').is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) {
 		if ($(this).is('img')) $(this).after(coerceimg);
@@ -530,7 +545,7 @@ function up() { //no server code yet
 	parent.children('img.type').mouseover(); //reshow the icons so the user can see which element they were reordering
 	parent.children('span').mouseover(); //reshow the icons so the user can see which element they were reordering
 }
-var upimg = $('<img>').addClass('up').attr('src', images.up).attr('title', 'Move up').click(up);
+var upimg = $('<img>').addClass('up').attr('src', images.up).attr('title', 'Move up');
 function showup() { //see showedit()
 	if (!$(this).parent().children('img.up').is(upimg) && !$(this).children('img.up').is(upimg)) {
 		if ($(this).is('img')) $(this).after(upimg);
@@ -547,7 +562,7 @@ function down() { //no server code yet; see up()
 	parent.children('img.type').mouseover();
 	parent.children('span').mouseover();
 }
-var downimg = $('<img>').addClass('down').attr('src', images.down).attr('title', 'Move down').click(down);
+var downimg = $('<img>').addClass('down').attr('src', images.down).attr('title', 'Move down');
 function showdown() { //see showedit()
 	if (!$(this).parent().children('img.down').is(downimg) && !$(this).children('img.down').is(downimg)) {
 		if ($(this).is('img')) $(this).after(downimg);
@@ -563,7 +578,7 @@ function closeall() { //closes all editing windows
 
 window.onload = function() { //mess with elements when they have all loaded
 	$('div#filedrag').on('dragover', FileDragHover).on('dragover', FileDragHover).on('drop', FileSelectHandler);
-	
+
 	editor = ace.edit('ace'); //make a new ace editor
 	editor.setShowPrintMargin(false); //don't show an annoying vertical line
 	editor.setShowInvisibles(false); //don't show new lines, paragraphs, etc.
@@ -575,7 +590,7 @@ window.onload = function() { //mess with elements when they have all loaded
 	editor.keyBinding.onCommandKey = function(e, hashId, keyCode) { //if the escape key is pressed in the editor, close it
 		if (keyCode == 27) closeeditor();
 	};
-	
+
 	$('div#filedrag').hover(function() { //tell the user that they can drop a file on the filedrop
 		$(this).text('Drop file here');
 	}, function() {
@@ -711,7 +726,10 @@ window.onload = function() { //mess with elements when they have all loaded
 					else alert(valueworks.message); //otherwise, alert so
 				}
 			}
+			remakeImages();
 		}
 	});
-	$('select').selectpicker({style: 'btn btn-primary', menuStyle: 'dropdown-inverse'}); //initialize the select
+	$('button#cancel').click(closeeditor); //bind the editor close button
+	remakeImages(); //images need click handlers
+	$('select').select2(); //initialize the select
 };

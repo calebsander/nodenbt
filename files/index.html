@@ -2,12 +2,11 @@
 	<head>
 		<title>NBT Editor</title>
 		<link href = '/images/favicon.ico' rel = 'icon' />
-		<link href = '/bootstrap/css/bootstrap.css' rel = 'stylesheet' />
-		<link href = '/css/flat-ui.css' rel = 'stylesheet' />
+		<link href = '/Flat-UI/dist/css/vendor/bootstrap.min.css' rel = 'stylesheet' />
+		<link href = '/Flat-UI/dist/css/flat-ui.min.css' rel = 'stylesheet' />
 		<link href = '/stylesheet.css' rel = 'stylesheet' />
 		<script src = '/js/jquery.js'></script>
-		<script src = '/js/bootstrap.min.js'></script>
-		<script src = '/js/bootstrap-select.js'></script>
+		<script src = '/Flat-UI/dist/js/flat-ui.min.js'></script>
 		<script src = '/ace/ace.js' charset = 'utf-8'></script>
 		<script src = '/js/BigNumber.js'></script>
 		<script src = '/script.js'></script>
@@ -31,7 +30,9 @@
 			<div id = 'editor' class = 'panel panel-default'>
 				<div class = 'panel-heading'>
 					<h3 class = 'panel-title'></h3>
-					<button class = 'btn btn-default pull-right' id = 'save'>Save</button>
+					<div class = 'btn-group pull-right' role = 'group'>
+						<button class = 'btn btn-default' id = 'save'>Save</button>
+					</div>
 				</div>
 				<div class = 'panel-body'>
 					<div id = 'ace'></div>
@@ -58,7 +59,7 @@
 				</div>
 				<div class = 'panel-body'>
 					<div class = 'input-group'>
-						<select id = 'typeinput' class = 'select-block mbl'></select>
+						<select id = 'typeinput' class = 'form-control select select-primary select-block mbl'></select>
 						<span class = 'input-group-btn'>
 							<button id = 'typesave' class = 'btn btn-default btn-success pull-right'>OK</button>
 						</span>
