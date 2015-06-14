@@ -538,8 +538,9 @@ function addudicons(list) { //add ordering icons to a Byte_Array, List, or Int_A
 function up() { //no server code yet
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
+	var prev = parent.prev(); //find previous sibling before detaching the element
 	parent.detach(); //remove the element but keep its mouseover handlers
-	parent.prev().before(parent); //put the element before its previous sibling
+	prev.before(parent); //put the element before its previous sibling
 	addudicons(parent.parent()); //add new ordering icons
 	removeicons(); //remove all the old icons that may no longer be applicable from new ordering
 	parent.children('img.type').mouseover(); //reshow the icons so the user can see which element they were reordering
@@ -555,8 +556,9 @@ function showup() { //see showedit()
 function down() { //no server code yet; see up()
 	var parent = $(this).parent();
 	if (parent.is('span')) parent = parent.parent();
+	var next = parent.next();
 	parent.detach();
-	parent.next().after(parent);
+	next.after(parent);
 	addudicons(parent.parent());
 	removeicons();
 	parent.children('img.type').mouseover();
