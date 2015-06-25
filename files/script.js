@@ -495,7 +495,7 @@ function closetype() { //close the type selection - quick and easy
 	$('div#tagtype').hide();
 }
 
-function coerce() {
+function coerce() { //no server code yet
 	closeall(); //shouldn't be editing anything else simultaneously
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
@@ -568,6 +568,18 @@ function showup() { //see showedit()
 function down() { //see up()
 	var parent = $(this).parent();
 	if (parent.is('span')) parent = parent.parent();
+	$.ajax({
+		'url': '/editnbt/down',
+		'type': 'POST',
+		'data': JSON.stringify({'path': getPath(parent)}),
+		'dataType': 'json',
+		'success': function(response) {
+			if (!response.success) this.error();
+		},
+		'error': function() {
+			alert('Editting failed?');
+		}
+	});
 	var next = parent.next();
 	parent.detach();
 	next.after(parent);

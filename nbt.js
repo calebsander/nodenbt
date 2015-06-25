@@ -484,9 +484,15 @@ http.createServer(function(req, res) {
 					case '/editnbt/up':
 						var index = data.path.pop();
 						var list = walkPath(data.path).value.list;
-						console.log(list);
 						var temp = list[index - 1];
 						list[index - 1] = list[index];
+						list[index] = temp;
+						break;
+					case '/editnbt/down':
+						var index = data.path.pop();
+						var list = walkPath(data.path).value.list;
+						var temp = list[index + 1];
+						list[index + 1] = list[index];
 						list[index] = temp;
 				}
 				modified = true;
