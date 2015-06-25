@@ -229,7 +229,7 @@ function remakeImages() {
 var editor, editororig; //editor is the ace editor variable, editororig is the original value of the editor to compare to
 function edit() {
 	closeall(); //remove all editting windows
-	var parent = $(this).parent(); //parent will be the li element
+	var parent = $(this).parent(); //parent should be the li element
 	if (parent.is('span')) parent = parent.parent(); //if targetting an element in a List of type Byte_Array or Int_Array, parent will be correct, otherwise parent is incorrectly the span element
 	savetag = parent;
 	switch (parent.children('img.type').attr('src')) { //different types must be handled differently
@@ -495,7 +495,7 @@ function closetype() { //close the type selection - quick and easy
 	$('div#tagtype').hide();
 }
 
-function coerce() { //no server code yet
+function coerce() {
 	closeall(); //shouldn't be editing anything else simultaneously
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
@@ -535,9 +535,21 @@ function addudicons(list) { //add ordering icons to a Byte_Array, List, or Int_A
 		if (i != elements.length - 1) element.mouseover(showdown); //if not the last element, add a down icon
 	}
 }
-function up() { //no server code yet
+function up() { //move an element in a list up
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
+	$.ajax({
+		'url': '/editnbt/up',
+		'type': 'POST',
+		'data': JSON.stringify({'path': getPath(parent)}),
+		'dataType': 'json',
+		'success': function(response) {
+			if (!response.success) this.error();
+		},
+		'error': function() {
+			alert('Editting failed?');
+		}
+	});
 	var prev = parent.prev(); //find previous sibling before detaching the element
 	parent.detach(); //remove the element but keep its mouseover handlers
 	prev.before(parent); //put the element before its previous sibling
@@ -553,7 +565,7 @@ function showup() { //see showedit()
 		else $(this).append(upimg);
 	}
 }
-function down() { //no server code yet; see up()
+function down() { //see up()
 	var parent = $(this).parent();
 	if (parent.is('span')) parent = parent.parent();
 	var next = parent.next();
@@ -572,13 +584,29 @@ function showdown() { //see showedit()
 	}
 }
 
-function closeall() { //closes all editing windows
+function closeall() { //close all editing windows
 	closeeditor();
 	closename();
 	closetype();
 }
 
-window.onload = function() { //mess with elements when they have all loaded
+function getPath(element) { //gets an array representing the path to the tag
+	if (element.parent().parent().is('li')) { //if not the top element
+		var path = getPath(element.parent().parent()); //get parent's path, then add to it
+		if (element.attr('key')) path.push(element.attr('key')); //if in a compound tag and has key
+		else { //if no key, either in a list or in a compound without a key
+			if (element.parent().parent().children('img.type').attr('src') == images.TAG_Compound) path.push(''); //if a nameless compound tag
+			else path.push(element.parent().children().index(element)); //if in a list, get index
+		}
+		return path;
+	}
+	else { //if the top element
+		if (element.attr('key')) return [element.attr('key')];
+		else return [''];
+	}
+}
+
+$(document).ready(function() { //mess with elements when they have all loaded
 	$('div#filedrag').on('dragover', FileDragHover).on('dragover', FileDragHover).on('drop', FileSelectHandler);
 
 	editor = ace.edit('ace'); //make a new ace editor
@@ -734,4 +762,4 @@ window.onload = function() { //mess with elements when they have all loaded
 	$('button#cancel').click(closeeditor); //bind the editor close button
 	remakeImages(); //images need click handlers
 	$('select').select2(); //initialize the select
-};
+});

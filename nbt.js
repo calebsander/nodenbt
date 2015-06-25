@@ -308,8 +308,31 @@ function writeString(value) {
 }
 
 function writeList(value) {
-	var writeFunction, writeType;
-	switch (value.type) {
+	var typeInfo = computeType(value.type);
+	writeByte(typeInfo.writeType);
+	writeInt(value.list.length);
+	for (var i = 0; i < value.list.length; i++) typeInfo.writeFunction(value.list[i]);
+}
+
+function writeCompound(value) {
+	var typeInfo;
+	for (var i in value) {
+		typeInfo = computeType(value[i].type);
+		writeByte(typeInfo.writeType);
+		writeString(i);
+		typeInfo.writeFunction(value[i].value);
+	}
+	writeByte(TAG_End);
+}
+
+function writeInt_Array(value) {
+	writeInt(value.length);
+	for (var i = 0; i < value.length; i++) writeInt(value[i]);
+}
+
+function computeType(typeName) {
+	var writeType, writeFunction;
+	switch (typeName) {
 		case null:
 			writeType = TAG_End;
 			break;
@@ -360,122 +383,46 @@ function writeList(value) {
 		default:
 			throw new Error('No such tag: ' + value.type);
 	}
-	writeByte(writeType);
 
-	writeInt(value.list.length);
-	for (var i = 0; i < value.list.length; i++) writeFunction(value.list[i]);
-}
-
-function writeCompound(value) {
-	for (var i in value) {
-		switch (value[i].type) {
-			case 'TAG_Byte':
-				writeByte(TAG_Byte);
-				writeString(i);
-				writeByte(value[i].value);
-				break;
-			case 'TAG_Short':
-				writeByte(TAG_Short);
-				writeString(i);
-				writeShort(value[i].value);
-				break;
-			case 'TAG_Int':
-				writeByte(TAG_Int);
-				writeString(i);
-				writeInt(value[i].value);
-				break;
-			case 'TAG_Long':
-				writeByte(TAG_Long);
-				writeString(i);
-				writeLong(value[i].value);
-				break;
-			case 'TAG_Float':
-				writeByte(TAG_Float);
-				writeString(i);
-				writeFloat(value[i].value);
-				break;
-			case 'TAG_Double':
-				writeByte(TAG_Double);
-				writeString(i);
-				writeDouble(value[i].value);
-				break;
-			case 'TAG_Byte_Array':
-				writeByte(TAG_Byte_Array);
-				writeString(i);
-				writeByte_Array(value[i].value);
-				break;
-			case 'TAG_String':
-				writeByte(TAG_String);
-				writeString(i);
-				writeString(value[i].value);
-				break;
-			case 'TAG_List':
-				writeByte(TAG_List);
-				writeString(i);
-				writeList(value[i].value);
-				break;
-			case 'TAG_Compound':
-				writeByte(TAG_Compound);
-				writeString(i);
-				writeCompound(value[i].value);
-				break;
-			case 'TAG_Int_Array':
-				writeByte(TAG_Int_Array);
-				writeString(i);
-				writeInt_Array(value[i].value);
-				break;
-			default:
-				throw new Error('No such tag: ' + value[i].type);
-		}
-	}
-
-	writeByte(TAG_End);
-}
-
-function writeInt_Array(value) {
-	writeInt(value.length);
-	for (var i = 0; i < value.length; i++) writeInt(value[i]);
+	return {
+		writeType: writeType,
+		writeFunction: writeFunction
+	};
 }
 
 //HTTP SERVER
 
 function return404(res) {
-	res.writeHead(404);
 	res.setHeader('content-type', 'text/plain');
+	res.statusCode = 404;
 	res.end('404! No such page or method.');
 }
 var serv = require('./node_modules/fileserver/fileserver.js')('./files', true, return404);
 
+String.prototype.begins = function(substring) {
+	return this.substring(0, substring.length) == substring;
+}
+
+function walkPath(path) {
+	var selected = nbtobject;
+	for (var node = 1; node < path.length; node++) {
+		switch (typeof path[node]) {
+			case 'string':
+				selected = selected.value[path[node]];
+				break;
+			case 'number':
+				selected = selected.value.list[path[node]];
+				break;
+			default:
+				throw new Error('Invalid path type');
+		}
+	}
+	return selected;
+}
+
 http.createServer(function(req, res) {
 	console.log(req.url);
-	if (req.url == '/nbtjson') {
-		res.setHeader('content-type', 'application/json');
-		if (nbtobject) res.end(JSON.stringify({success: true, data: nbtobject}));
-		else res.end(JSON.stringify({success: false, message: 'no data'}));
-	}
-	else if (req.url.substring(0, 8) == '/setnbt/') {
-		var data = '';
-		if (nbtobject) {
-			req.on('data', function(chunk) {
-				data += chunk;
-				if (data.length > 1000000) {
-					res.setHeader('content-type', 'application/json');
-					res.end(JSON.stringify({success: false, message: 'data overload'}));
-					req.destroy();
-				}
-			}).on('end', function() {
-				nbtobject = JSON.parse(data);
-				res.setHeader('content-type', 'application/json');
-				modified = true;
-				res.end(JSON.stringify({success: true}));
-			});
-		}
-		else {
-			res.setHeader('content-type', 'application/json');
-			res.end(JSON.stringify({success: false, message: 'no data'}));
-		}
-	}
-	else if (req.url == '/upload') {
+	if (req.url == '/upload') {
 		var data = new Buffer(0);
 		req.on('data', function(chunk) {
 			data = Buffer.concat([data, chunk]);
@@ -516,7 +463,44 @@ http.createServer(function(req, res) {
 			});
 		});
 	}
-	else if (req.url.substring(0, 10) == '/download/') {
+	else if (req.url == '/nbtjson') {
+		res.setHeader('content-type', 'application/json');
+		if (nbtobject) res.end(JSON.stringify({success: true, data: nbtobject}));
+		else res.end(JSON.stringify({success: false, message: 'no data'}));
+	}
+	else if (req.url.begins('/editnbt/')) {
+		var data = '';
+		req.on('data', function(chunk) {
+			data += chunk;
+			if (data.length > 10000000) {
+				res.setHeader('content-type', 'application/json');
+				res.end(JSON.stringify({success: false, message: 'data overload'}));
+				req.destroy();
+			}
+		}).on('end', function() {
+			data = JSON.parse(data);
+			try {
+				switch (req.url) {
+					case '/editnbt/up':
+						var index = data.path.pop();
+						var list = walkPath(data.path).value.list;
+						console.log(list);
+						var temp = list[index - 1];
+						list[index - 1] = list[index];
+						list[index] = temp;
+				}
+				modified = true;
+				res.setHeader('content-type', 'application/json');
+				res.end(JSON.stringify({success: true}));
+			}
+			catch (error) {
+				res.setHeader('content-type', 'application/json');
+				res.end(JSON.stringify({success: false, message: 'invalid instruction or path'}));
+				throw error; //for development only
+			}
+		});
+	}
+	else if (req.url.begins('/download/')) {
 		if (nbtobject) {
 			if (gzip) {
 				try {
@@ -526,7 +510,7 @@ http.createServer(function(req, res) {
 					}
 					else writenbt = readnbt;
 					zlib.gzip(writenbt, function(err, result) {
-						res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1, req.url.length)));
+						res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1)));
 						res.end(result);
 					});
 				}
@@ -542,8 +526,8 @@ http.createServer(function(req, res) {
 						writeCompound({'': nbtobject}, 0);
 					}
 					else writenbt = readnbt;
-					res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1, req.url.length)));
-					res.end(result);
+					res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1)));
+					res.end(writenbt);
 				}
 				catch (error) {
 					console.log(error.stack);
