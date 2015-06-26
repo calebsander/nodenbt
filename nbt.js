@@ -406,16 +406,14 @@ String.prototype.begins = function(substring) {
 function walkPath(path) {
 	var selected = nbtobject;
 	for (var node = 1; node < path.length; node++) {
-		switch (typeof path[node]) {
-			case 'string':
-				selected = selected.value[path[node]];
-				break;
-			case 'number':
+		switch (selected.type) {
+			case 'TAG_List':
 				selected = selected.value.list[path[node]];
 				break;
-			default:
-				throw new Error('Invalid path type');
+			default: //TAG_Compound, TAG_Byte_Array, TAG_Int_Array
+				selected = selected.value[path[node]];
 		}
+		if (!selected) throw new Error('Not a valid path: ' + String(path[node]));
 	}
 	return selected;
 }
@@ -482,20 +480,22 @@ http.createServer(function(req, res) {
 			try {
 				switch (req.url) {
 					case '/editnbt/up':
-						var index = data.path.pop();
-						var list = walkPath(data.path).value.list;
-						var temp = list[index - 1];
-						list[index - 1] = list[index];
-						list[index] = temp;
+						var index = data.path.pop(); //get path excluding the position in the array to be moved
+						var list = walkPath(data.path).value; //for TAG_Byte_Array or TAG_Int_Array
+						if (!Array.isArray(list)) list = list.list; //for TAG_List
+						var temp = list[index - 1]; //store the value at the index that will be overwritten
+						list[index - 1] = list[index]; //move element up
+						list[index] = temp; //move previous element down
 						break;
-					case '/editnbt/down':
+					case '/editnbt/down': //see code for up
 						var index = data.path.pop();
-						var list = walkPath(data.path).value.list;
+						var list = walkPath(data.path).value;
+						if (!Array.isArray(list)) list = list.list;
 						var temp = list[index + 1];
 						list[index + 1] = list[index];
 						list[index] = temp;
 				}
-				modified = true;
+				modified = true; //NBT data should be reqritten when download is requested
 				res.setHeader('content-type', 'application/json');
 				res.end(JSON.stringify({success: true}));
 			}
