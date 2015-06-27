@@ -1,7 +1,7 @@
 var fs = require('fs');
 var zlib = require('zlib');
 var util = require('util');
-var bn = require('./BigNumber.js');
+var strnum = require('./strint.js');
 var http = require('http');
 var url = require('url');
 var mime = require('./node_modules/fileserver/node_modules/mime');
@@ -62,8 +62,10 @@ function readInt(offset) {
 }
 
 function readLong(offset) {
+	var upperint = readInt(offset);
+	offset += upperint.length;
 	return {
-		value: String(new bn(readInt(offset)).multiply(4294967296).add(readInt(offset + 4))), //JavaScript can't natively store 64-bit integers
+		value: String(strnum.add(strnum.mul(String(upperint.value), '4294967296'), String(readnbt.readUInt32BE(offset)))), //JavaScript can't natively store 64-bit integers
 		length: 8
 	};
 }
@@ -276,11 +278,12 @@ function writeInt(value) {
 }
 
 function writeLong(value) {
-	var bn = new BigNumber(value);
-	var bnb = bn.divide(4294967296);
-	if (bnb < -2147483648 || bnb > 2147483647) throw new Error('out of range: ' + value);
-	writeInt(Number(bnb.intPart()));
-	writeInt(Number(bn.mod(4294967296)));
+	if (strnum.ge(strnum.abs(value), '9223372036854775808') && !strnum.eq(value, '-9223372036854775808')) throw new Error('out of range: ' + value);
+	var bnb = strnum.div(value, '4294967296', true);
+	var bnl = strnum.sub(value, strnum.mul(bnb, '4294967296'));
+	if (strnum.gt(bnl, '2147483647')) bnl = strnum.sub(bnl, '4294967296');
+	writeInt(Number(bnb));
+	writeInt(Number(bnl));
 }
 
 function writeFloat(value) {
@@ -494,6 +497,10 @@ http.createServer(function(req, res) {
 						var temp = list[index + 1];
 						list[index + 1] = list[index];
 						list[index] = temp;
+						break;
+					case '/editnbt/edit':
+						var tag = walkPath(data.path);
+						tag.value = data.value;
 				}
 				modified = true; //NBT data should be reqritten when download is requested
 				res.setHeader('content-type', 'application/json');
@@ -509,7 +516,7 @@ http.createServer(function(req, res) {
 	else if (req.url.begins('/download/')) {
 		if (nbtobject) {
 			if (gzip) {
-				try {
+				try { //could be condensed a bit
 					if (modified) {
 						writenbt = new Buffer(0);
 						writeCompound({'': nbtobject}, 0);

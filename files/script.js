@@ -66,7 +66,7 @@ function FileSelectHandler(e) { //triggered when drogging a file onto the filedr
 	reader.type = files[0].type;
 	reader.onload = function(e) { //when file has been processed into memory, upload it to the server and display it
 		$('div#nbt').children().remove();
-		remakeImages();
+		remakeimages();
 		$('div#nbt').prepend($('<div>').attr('id', 'loading').text('Parsing...'));
 		$.ajax({
 			url: '/upload',
@@ -216,7 +216,7 @@ function settypeselect(type) { //used to set the possible values of the tag type
 }
 
 //Readds the image click handlers
-function remakeImages() {
+function remakeimages() {
 	editimg.off('click').click(edit);
 	deleteimg.off('click').click(deleter);
 	renameimg.off('click').click(rename);
@@ -224,6 +224,14 @@ function remakeImages() {
 	coerceimg.off('click').click(coerce);
 	upimg.off('click').click(up);
 	downimg.off('click').click(down);
+}
+
+//Funcions for edit request responses:
+function editsuccess(response) { //on success
+	if (!response.success) editerror();
+}
+function editerror() { //on error
+	alert('Editting failed?');
 }
 
 var editor, editororig; //editor is the ace editor variable, editororig is the original value of the editor to compare to
@@ -364,23 +372,38 @@ function save() { //no server code yet
 		var editorvalue = editor.getValue();
 		var valueworks = valuecheck(savetype, editorvalue); //check the value
 		if (valueworks.success) { //if it worked
+			var savevalue; //value to be saved
 			if (savetype == images.TAG_Byte_Array || savetype == images.TAG_Int_Array) { //if it is a Byte_Array or Int_Array
 				if (savetype == images.TAG_Byte_Array) nbttype = 'TAG_Byte';
 				else nbttype = 'TAG_Int';
 				var container = savetag.children('ul');
 				container.children().remove(); //remove old children
 				//iterate over every element and append the li to the container
-				for (var i = 0; i < valueworks.value.length; i++) container.append(renderJSON({type: nbttype, value: Number(valueworks.value[i])}, undefined, true));
+				for (var i = 0; i < valueworks.value.length; i++) container.append(renderJSON({type: nbttype, value: valueworks.value[i] = Number(valueworks.value[i])}, undefined, true));
 				addudicons(container); //must re-add the ordering icons
+				savevalue = valueworks.value; //get array of new values
 			}
 			else { //otherwise, it is much simpler
-				if (savetype == images.TAG_String) savetag.attr('value', valueworks.value.substring(1, valueworks.value.length - 1)); //get rid of the quotes around a string
-				else savetag.attr('value', valueworks.value); //record new value
-				if (savetag.attr('key')) savetag.children('span').text(savetag.attr('key') + ': ' + valueworks.value); //just change the text, as in renderJSON
-				else savetag.children('span').text(valueworks.value);
+				if (savetype == images.TAG_String) savevalue = valueworks.value.substring(1, valueworks.value.length - 1); //get rid of the quotes around a string
+				else savevalue = valueworks.value;
+				savetag.attr('value', savevalue); //record new value
+				var spanchild = savetag.children('span'); //get the span element that displays
+				if (savetag.attr('key')) spanchild.text(savetag.attr('key') + ': ' + valueworks.value); //just change the text, as in renderJSON
+				else spanchild.text(valueworks.value);
 			}
-			remakeImages();
+			remakeimages();
 			closeeditor();
+			$.ajax({
+				'url': '/editnbt/edit',
+				'type': 'POST',
+				'data': JSON.stringify({
+					'path': getPath(savetag),
+					'value': savevalue
+				}),
+				'dataType': 'json',
+				'success': editsuccess,
+				'error': editerror
+			});
 		}
 		else alert(valueworks.message); //should be cleaned up
 	}
@@ -394,7 +417,7 @@ function deleter() { //no server code yet
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
 	parent.remove(); //delete the tag
-	remakeImages();
+	remakeimages();
 	if (parent.is(savetag) || parent.find(savetag).length) closeall(); //if we deleted a tag that was being edited, close the edit windows
 }
 var deleteimg = $('<img>').addClass('delete').attr('src', images['delete']).attr('title', 'Delete tag');
@@ -408,7 +431,7 @@ function showdelete() { //see showedit()
 var renameorig; //the original tag name to compare to
 function rename() {
 	closeall(); //don't want to be editting anything else at the same time
-	var parent = $(this).parent(); //seet edit()
+	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
 	savetag = parent; //see edit()
 	newtag = false;
@@ -432,7 +455,7 @@ function savename() { //no server code yet
 		if (savetag.attr('value')) savetag.children('span').text(newname + ': ' + savetag.attr('value')); //if a tag without children, display the new name and the unchanged value
 		else savetag.children('span').text(newname + ':'); //if the tag has children, just display the new name
 		closename(); //the name input doesn't need to be shown anymore
-		remakeImages();
+		remakeimages();
 	}
 }
 function closename() { //close the name input
@@ -543,12 +566,8 @@ function up() { //move an element in a list up
 		'type': 'POST',
 		'data': JSON.stringify({'path': getPath(parent)}),
 		'dataType': 'json',
-		'success': function(response) {
-			if (!response.success) this.error();
-		},
-		'error': function() {
-			alert('Editting failed?');
-		}
+		'success': editsuccess,
+		'error': editerror
 	});
 	var prev = parent.prev(); //find previous sibling before detaching the element
 	parent.detach(); //remove the element but keep its mouseover handlers
@@ -573,12 +592,8 @@ function down() { //see up()
 		'type': 'POST',
 		'data': JSON.stringify({'path': getPath(parent)}),
 		'dataType': 'json',
-		'success': function(response) {
-			if (!response.success) this.error();
-		},
-		'error': function() {
-			alert('Editting failed?');
-		}
+		'success': editsuccess,
+		'error': editerror
 	});
 	var next = parent.next();
 	parent.detach();
@@ -768,10 +783,10 @@ $(document).ready(function() { //mess with elements when they have all loaded
 					else alert(valueworks.message); //otherwise, alert so
 				}
 			}
-			remakeImages();
+			remakeimages();
 		}
 	});
 	$('button#cancel').click(closeeditor); //bind the editor close button
-	remakeImages(); //images need click handlers
+	remakeimages(); //images need click handlers
 	$('select').select2(); //initialize the select
 });
