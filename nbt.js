@@ -278,7 +278,7 @@ function writeInt(value) {
 }
 
 function writeLong(value) {
-	if (strnum.ge(strnum.abs(value), '9223372036854775808') && !strnum.eq(value, '-9223372036854775808')) throw new Error('out of range: ' + value);
+	if (strnum.gt(value, '9223372036854775807') || strnum.lt(value, '-9223372036854775808')) throw new Error('out of range: ' + value);
 	var bnb = strnum.div(value, '4294967296', true);
 	var bnl = strnum.sub(value, strnum.mul(bnb, '4294967296'));
 	if (strnum.gt(bnl, '2147483647')) bnl = strnum.sub(bnl, '4294967296');
@@ -501,6 +501,12 @@ http.createServer(function(req, res) {
 					case '/editnbt/edit':
 						var tag = walkPath(data.path);
 						tag.value = data.value;
+						break;
+					case '/editnbt/rename':
+						var tag = data.path.pop();
+						var compound = walkPath(data.path).value;
+						compound[data.name] = compound[tag];
+						delete compound[tag];
 				}
 				modified = true; //NBT data should be reqritten when download is requested
 				res.setHeader('content-type', 'application/json');

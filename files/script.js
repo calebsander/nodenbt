@@ -366,7 +366,7 @@ function valuecheck(type, value) { //used to check if the provided value (as a s
 			throw new Error('No such tag: ' + type);
 	}
 }
-function save() { //no server code yet
+function save() {
 	if ($(this).hasClass('btn-info')) { //if it was actually changed
 		var savetype = savetag.children('img.type').attr('src');
 		var editorvalue = editor.getValue();
@@ -448,14 +448,26 @@ function showrename() { //see showedit()
 		else $(this).append(renameimg);
 	}
 }
-function savename() { //no server code yet
+function savename() {
 	if ($('button#namesave').hasClass('btn-success')) { //if the name is invalid, do nothing
+		var path = getPath(savetag); //get the path before renaming
 		var newname = $('input#nameinput').val(); //fetch the new name
 		savetag.attr('key', newname); //save the new key
 		if (savetag.attr('value')) savetag.children('span').text(newname + ': ' + savetag.attr('value')); //if a tag without children, display the new name and the unchanged value
 		else savetag.children('span').text(newname + ':'); //if the tag has children, just display the new name
 		closename(); //the name input doesn't need to be shown anymore
 		remakeimages();
+		$.ajax({
+			'url': '/editnbt/rename',
+			'type': 'POST',
+			'data': JSON.stringify({
+				'path': path,
+				'name': newname
+			}),
+			'dataType': 'json',
+			'success': editsuccess,
+			'error': editerror
+		});
 	}
 }
 function closename() { //close the name input
