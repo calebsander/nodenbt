@@ -503,10 +503,14 @@ http.createServer(function(req, res) {
 						tag.value = data.value;
 						break;
 					case '/editnbt/rename':
-						var tag = data.path.pop();
+						var tag = data.path.pop(); //see code for up
 						var compound = walkPath(data.path).value;
-						compound[data.name] = compound[tag];
-						delete compound[tag];
+						compound[data.name] = compound[tag]; //switch tags
+						delete compound[tag]; //remove old tag
+						break;
+					case '/editnbt/delete':
+						var tag = data.path.pop(); //see code for up
+						delete walkPath(data.path).value[tag]; //remove the tag
 				}
 				modified = true; //NBT data should be reqritten when download is requested
 				res.setHeader('content-type', 'application/json');

@@ -415,9 +415,17 @@ function closeeditor() { //close the editor
 	$('div#editor').hide();
 }
 
-function deleter() { //no server code yet
+function deleter() {
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
+	$.ajax({
+		'url': '/editnbt/delete',
+		'type': 'POST',
+		'data': JSON.stringify({'path': getPath(parent)}),
+		'dataType': 'json',
+		'success': editsuccess,
+		'error': editerror
+	});
 	parent.remove(); //delete the tag
 	remakeimages();
 	if (parent.is(savetag) || parent.find(savetag).length) closeall(); //if we deleted a tag that was being edited, close the edit windows
@@ -495,7 +503,7 @@ var tagtype, defaults = { //tagtype is the type of the new tag when creating a c
 function createtag(type, key) { //calls renderJSON to generate the tag and adds it as a child of savetag
 	savetag.children('ul').append(renderJSON({type: type, value: defaults[type]}, key));
 }
-function add() { //no server code yet
+function add() {
 	closeall(); //nothing else should be editted at the same time
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
