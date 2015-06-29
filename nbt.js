@@ -511,6 +511,23 @@ http.createServer(function(req, res) {
 					case '/editnbt/delete':
 						var tag = data.path.pop(); //see code for up
 						delete walkPath(data.path).value[tag]; //remove the tag
+						break;
+					case '/editnbt/coerce':
+						var tag = walkPath(data.path); //get the tag being editted
+						if (tag.type == 'TAG_List') {
+							if (tag.value.type == 'TAG_String' && data.type != 'TAG_Long') {
+								for (var element = 0; element < tag.value.list.length; element++) tag.value.list[element] = Number(tag.value.list[element]); //convert strings to numbers
+							}
+							else if (data.type == 'TAG_String') {
+								for (var element = 0; element < tag.value.list.length; element++) tag.value.list[element] = String(tag.value.list[element]); //convert numbers to strings
+							}
+							tag.value.type = data.type;
+						}
+						else {
+							if (tag.type == 'TAG_String' && data.type != 'TAG_Long') tag.value = Number(tag.value); //convert strings to numbers
+							else if (data.type == 'TAG_String') tag.value = String(tag.value); //convert numbers to strings
+							tag.type = data.type;
+						}
 				}
 				modified = true; //NBT data should be reqritten when download is requested
 				res.setHeader('content-type', 'application/json');

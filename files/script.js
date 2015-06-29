@@ -748,8 +748,9 @@ $(document).ready(function() { //mess with elements when they have all loaded
 					success = true;
 				}
 				else { //otherwise, a type check is needed
-					success = true, valueworks, elements = savetag.children('ul').children(), j; //success is coercibility, valueworks is the result of valuecheck(), elements is the array of children
-					for (var i = 0; i < elements.length; i++) { //for each element
+					var valueworks, elements = savetag.children('ul').children(); //success is coercibility, valueworks is the result of valuecheck(), elements is the array of children
+					success = true;
+					for (var i = 0, j; i < elements.length; i++) { //for each element
 						if (elements.eq(i).attr('value') === undefined) { //converting a Byte_Array or Int_Array
 							var subchildren = elements.eq(i).children('ul').children(), items = []; //subchildren is the set of children of each element of the list, items contains their values
 							for (j = 0; j < subchildren.length; j++) items[j] = subchildren.eq(j).attr('value'); //create an array of values of each child of the Byte_Array or Int_Array
@@ -776,7 +777,7 @@ $(document).ready(function() { //mess with elements when they have all loaded
 						else var subsrc = images.TAG_Int;
 						for (i = 0; i < elements.length; i++) { //go through the elements
 							if (elements.eq(i).attr('value')) { //if not a Byte_Array or Int_Array
-								savetag.children('span').text(formatvalue(savetag.attr('value'), src)); //if going between a number and a string, add/remove the quotation marks
+								elements.eq(i).children('span').text(formatvalue(elements.eq(i).attr('value'), src)); //if going between a number and a string, add/remove the quotation marks
 								elements.eq(i).children('img.type').attr('src', src); //change the icon
 							}
 							else {
