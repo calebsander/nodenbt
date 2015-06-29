@@ -355,7 +355,7 @@ function valuecheck(type, value) { //used to check if the provided value (as a s
 			return {success: true, value: values};
 		case images.TAG_String: //if it is longer than TAG_Short's max value, it fails
 			if (value.length > 32767) return {success: false, message: value + " is longer than 32767 characters"};
-			return {success: true, value: '"' + value + '"'};
+			return {success: true, value: value};
 		case images.TAG_Int_Array: //see case images.TAG_Byte_Array
 			var values = value.split('\n');
 			for (var i = 0; i < values.length; i++) {
@@ -366,13 +366,17 @@ function valuecheck(type, value) { //used to check if the provided value (as a s
 			throw new Error('No such tag: ' + type);
 	}
 }
+function formatvalue(value, type) {
+	console.log(type);
+	if (type == images.TAG_String) return '"' + value + '"';
+	else return value;
+}
 function save() {
 	if ($(this).hasClass('btn-info')) { //if it was actually changed
 		var savetype = savetag.children('img.type').attr('src');
 		var editorvalue = editor.getValue();
 		var valueworks = valuecheck(savetype, editorvalue); //check the value
 		if (valueworks.success) { //if it worked
-			var savevalue; //value to be saved
 			if (savetype == images.TAG_Byte_Array || savetype == images.TAG_Int_Array) { //if it is a Byte_Array or Int_Array
 				if (savetype == images.TAG_Byte_Array) nbttype = 'TAG_Byte';
 				else nbttype = 'TAG_Int';
@@ -381,15 +385,13 @@ function save() {
 				//iterate over every element and append the li to the container
 				for (var i = 0; i < valueworks.value.length; i++) container.append(renderJSON({type: nbttype, value: valueworks.value[i] = Number(valueworks.value[i])}, undefined, true));
 				addudicons(container); //must re-add the ordering icons
-				savevalue = valueworks.value; //get array of new values
 			}
 			else { //otherwise, it is much simpler
-				if (savetype == images.TAG_String) savevalue = valueworks.value.substring(1, valueworks.value.length - 1); //get rid of the quotes around a string
-				else savevalue = valueworks.value;
-				savetag.attr('value', savevalue); //record new value
-				var spanchild = savetag.children('span'); //get the span element that displays
-				if (savetag.attr('key')) spanchild.text(savetag.attr('key') + ': ' + valueworks.value); //just change the text, as in renderJSON
-				else spanchild.text(valueworks.value);
+				savetag.attr('value', valueworks.value); //record new value
+				var spanchild = savetag.children('span'); //get the span element that displays the value
+				var savevalue = formatvalue(valueworks.value, savetag.children('img').attr('src'));
+				if (savetag.attr('key')) spanchild.text(savetag.attr('key') + ': ' + savevalue); //just change the text, as in renderJSON
+				else spanchild.text(savevalue);
 			}
 			remakeimages();
 			closeeditor();
@@ -398,7 +400,7 @@ function save() {
 				'type': 'POST',
 				'data': JSON.stringify({
 					'path': getPath(savetag),
-					'value': savevalue
+					'value': valueworks.value
 				}),
 				'dataType': 'json',
 				'success': editsuccess,
@@ -453,8 +455,9 @@ function savename() {
 		var path = getPath(savetag); //get the path before renaming
 		var newname = $('input#nameinput').val(); //fetch the new name
 		savetag.attr('key', newname); //save the new key
-		if (savetag.attr('value')) savetag.children('span').text(newname + ': ' + savetag.attr('value')); //if a tag without children, display the new name and the unchanged value
-		else savetag.children('span').text(newname + ':'); //if the tag has children, just display the new name
+		var spanchild = savetag.children('span'); //get the span element that displays the value
+		if (savetag.attr('value') === undefined) spanchild.text(newname + ':'); //if the tag has children, just display the new name
+		else spanchild.text(newname + ': ' + formatvalue(savetag.attr('value'), savetag.children('img').attr('src'))); //if a tag without children, display the new name and the unchanged value
 		closename(); //the name input doesn't need to be shown anymore
 		remakeimages();
 		$.ajax({
