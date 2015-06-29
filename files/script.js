@@ -95,7 +95,7 @@ function FileSelectHandler(e) { //triggered when drogging a file onto the filedr
 								closeall();
 								$('div#loading').text('Rendering...');
 								setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
-									$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data))); //display the JSON
+									$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data, undefined, true))); //display the JSON
 									if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
 									$('div#nbt>ul>li>ul').show();
 									$('div#loading').remove();
@@ -116,11 +116,12 @@ function togglecontainer() { //triggered when clicking on a Byte_Array, Int_Arra
 	else container.show();
 }
 
-function renderJSON(data, key) { //a recursive function to create an element that represents a tag
+function renderJSON(data, key, root) { //a recursive function to create an element that represents a tag
 	//key will be undefined if invoked by Byte_Array, Int_Array, or List; only relevant if displaying the child of a compound
 	//generally, the function finds what type the data is, appends an image with the correct icon, appends a span with the value, and adds mouseover edit function handlers
 	//if the data has a key, it adds compound-specific functions (e.g. rename), sets the key attribute, and adds the key to the displayed value
 	//Byte_Array, Int_Array, List, and Compound call this function on each of their children and then put them inside a hidden container
+	//root will only be true for the root tag
 	//returns the li element
 	var display = $('<li>');
 	switch (data.type) {
@@ -168,8 +169,14 @@ function renderJSON(data, key) { //a recursive function to create an element tha
 		case 'TAG_Compound':
 			var container = $('<ul>').addClass('nbtcontainer').hide();
 			for (var i in data.value) container.append(renderJSON(data.value[i], i));
-			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', images.TAG_Compound).attr('title', 'TAG_Compound').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showdelete).mouseover(showrename).mouseover(showadd)).append(container);
-			else return display.append($('<img>').addClass('type').attr('src', images.TAG_Compound).attr('title', 'TAG_Compound').click(togglecontainer).mouseover(removeicons).mouseover(showdelete).mouseover(showadd)).append(container);
+			var image = $('<img>').addClass('type').attr('src', images.TAG_Compound).attr('title', 'TAG_Compound').click(togglecontainer);
+			if (key) return display.attr('key', key).append(image).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showdelete).mouseover(showrename).mouseover(showadd)).append(container);
+			else {
+				image.mouseover(removeicons);
+				if (!root) image.mouseover(showdelete);
+				image.mouseover(showadd);
+				return display.append(image).append(container);
+			}
 		case 'TAG_Int_Array':
 			var container = $('<ul>').addClass('nbtcontainer').hide();
 			for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Int', value: data.value[i]}));
@@ -314,32 +321,33 @@ function showedit() { //triggered when mousing over an edittable element - shows
 	}
 }
 function valuecheck(type, value) { //used to check if the provided value (as a string) is valid for the data type
+	var origvalue = value;
 	//returns an object, where success says whether or not it worked, message is the error message, and value is the value to save
 	switch (type) {
 		case images.TAG_Byte:
 			value = Number(value); //convert value to a number
 			//if value is out of range or value cannot be made into a number or it was '' (which becomes 0) or it is not an integer, it fails
-			if (value < -128 || value > 127 || isNaN(value) || value === '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Byte's range"};
+			if (value < -128 || value > 127 || isNaN(value) || origvalue === '' || Math.floor(value) != value) return {success: false, message: "Out of TAG_Byte's range"};
 			return {success: true, value: String(value)};
 		case images.TAG_Short: //see TAG_Byte
 			value = Number(value);
-			if (value < -32768 || value > 32767 || isNaN(value) || value === '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Short's range"};
+			if (value < -32768 || value > 32767 || isNaN(value) || origvalue === '' || Math.floor(value) != value) return {success: false, message: "Out of TAG_Short's range"};
 			return {success: true, value: String(value)};
 		case images.TAG_Int: //see TAG_Byte
 			value = Number(value);
-			if (value < -2147483648 || value > 2147483647 || isNaN(value) || value === '' || Math.floor(value) != value) return {success: false, message: String(value) + " is out of TAG_Int's range"};
+			if (value < -2147483648 || value > 2147483647 || isNaN(value) || origvalue === '' || Math.floor(value) != value) return {success: false, message: "Out of TAG_Int's range"};
 			return {success: true, value: String(value)};
 		case images.TAG_Long:
 			var bn = new BigNumber(value); //as longs can be larger than JavaScript variables, convert them to a BigNumber object
 			//if value is not an integer or it was not a valid number string, it fails
-			if (value.indexOf('.') > -1 || (!bn.compare(new BigNumber(0)) && value != '0')) return {success: false, message: value + " is out of TAG_Long's range"};
+			if (value.indexOf('.') > -1 || (!bn.compare(new BigNumber(0)) && value != '0')) return {success: false, message: "Out of TAG_Long's range"};
 			if (value[0] == '-') { //if value is negative, convert it to positive to resolve a BigNumber bug
 				bn = new BigNumber(value.substring(1)); //omit the negative sign
 				//if value is too small, it fails
-				if (bn.compare(new BigNumber('9223372036854775808')) == 1) return {success: false, message: value + " is out of TAG_Long's range"};
+				if (bn.compare(new BigNumber('9223372036854775808')) == 1) return {success: false, message: "Out of TAG_Long's range"};
 			}
 			//if value is too large, it fails
-			else if (bn.compare(new BigNumber('9223372036854775807')) == 1) return {success: false, message: value + " is out of TAG_Long's range"};
+			else if (bn.compare(new BigNumber('9223372036854775807')) == 1) return {success: false, message: "Out of TAG_Long's range"};
 			return {success: true, value: String(bn)};
 		case images.TAG_Float: //value fails if it cannot be turned into a number or is '' (which becomes 0 when converted)
 			if (isNaN(Number(value)) || value === '') return {success: false, message: 'NaN'};
@@ -367,7 +375,6 @@ function valuecheck(type, value) { //used to check if the provided value (as a s
 	}
 }
 function formatvalue(value, type) {
-	console.log(type);
 	if (type == images.TAG_String) return '"' + value + '"';
 	else return value;
 }
@@ -735,22 +742,26 @@ $(document).ready(function() { //mess with elements when they have all loaded
 		}
 		else { //if coercing, check to make sure it's allowed
 			if (savetag.children('img.type').attr('src') == images.TAG_List) { //if in a list, each value must be checked individually
-				if (tagtype == 'TAG_List' || tagtype == 'TAG_Compound') savetag.attr('type', tagtype); //if going to List or Compound (from End), it's allowed
+				var success = false;
+				if (tagtype == 'TAG_List' || tagtype == 'TAG_Compound') { //if going to List or Compound (from End), it's allowed
+					savetag.attr('type', tagtype);
+					success = true;
+				}
 				else { //otherwise, a type check is needed
-					var success = true, valueworks, elements = savetag.children('ul').children(), j; //success is coercibility, valueworks is the result of valuecheck(), elements is the array of children
+					success = true, valueworks, elements = savetag.children('ul').children(), j; //success is coercibility, valueworks is the result of valuecheck(), elements is the array of children
 					for (var i = 0; i < elements.length; i++) { //for each element
-						if (elements.eq(i).attr('value')) { //if not a Byte_Array or Int_Array
-							valueworks = valuecheck(images[tagtype], elements.eq(i).attr('value')); //check the value
+						if (elements.eq(i).attr('value') === undefined) { //converting a Byte_Array or Int_Array
+							var subchildren = elements.eq(i).children('ul').children(), items = []; //subchildren is the set of children of each element of the list, items contains their values
+							for (j = 0; j < subchildren.length; j++) items[j] = subchildren.eq(j).attr('value'); //create an array of values of each child of the Byte_Array or Int_Array
+							valueworks = valuecheck(images[tagtype], items.join('\n')); //check that the values are allowed
 							if (!valueworks.success) { //if it didn't work, record so
 								success = false;
 								alert(valueworks.message);
 								break;
 							}
 						}
-						else { //converting a Byte_Array or Int_Array
-							var subchildren = elements.eq(i).children('ul').children(), items = []; //subchildren is the set of children of each element of the list, items contains their values
-							for (j = 0; j < subchildren.length; j++) items[j] = subchildren.eq(j).attr('value'); //create an array of values of each child of the Byte_Array or Int_Array
-							valueworks = valuecheck(images[tagtype], items.join('\n')); //check that the values are allowed
+						else { //if not a Byte_Array or Int_Array
+							valueworks = valuecheck(images[tagtype], elements.eq(i).attr('value')); //check the value
 							if (!valueworks.success) { //if it didn't work, record so
 								success = false;
 								alert(valueworks.message);
@@ -765,8 +776,7 @@ $(document).ready(function() { //mess with elements when they have all loaded
 						else var subsrc = images.TAG_Int;
 						for (i = 0; i < elements.length; i++) { //go through the elements
 							if (elements.eq(i).attr('value')) { //if not a Byte_Array or Int_Array
-								if (tagtype == 'TAG_String') savetag.children('span').text('"' + savetag.attr('value') + '"'); //if going from a number to a string, add the quotation marks
-								else if (savetag.children('img.type').attr('src') == images.TAG_String) savetag.children('span').text(savetag.attr('value')); //if going from a string to a number, get rid of the quotation marks
+								savetag.children('span').text(formatvalue(savetag.attr('value'), src)); //if going between a number and a string, add/remove the quotation marks
 								elements.eq(i).children('img.type').attr('src', src); //change the icon
 							}
 							else {
@@ -779,19 +789,8 @@ $(document).ready(function() { //mess with elements when they have all loaded
 					}
 				}
 			}
-			else { //if not dealing with a list
-				if (savetag.attr('value')) { //if not a Byte_Array or Int_Array
-					var src = images[tagtype];
-					var valueworks = valuecheck(src, savetag.attr('value')); //find if it is an allowable value
-					if (valueworks.success) { //if it is
-						if (tagtype == 'TAG_String') savetag.children('span').text(savetag.attr('key') + ': "' + savetag.attr('value') + '"'); //if going from a number to a string, add the quotation marks
-						else if (savetag.children('img.type').attr('src') == images.TAG_String) savetag.children('span').text(savetag.attr('key') + ': ' + savetag.attr('value')); //if going from a string to a number, get rid of the quotation marks
-						savetag.children('img.type').attr('src', src); //change the image src
-						closetype(); //close the window
-					}
-					else alert(valueworks.message); //if it isn't, alert so
-				}
-				else { //if a Byte_Array or Int_Array
+			else { //if dealing with a single member of a compound
+				if (savetag.attr('value') === undefined) { //if a Byte_Array or Int_Array
 					var src = images[tagtype]; //get new image src
 					if (tagtype == 'TAG_Byte_Array') var subsrc = images.TAG_Byte; //get src for children
 					else var subsrc = images.TAG_Int;
@@ -802,13 +801,39 @@ $(document).ready(function() { //mess with elements when they have all loaded
 						savetag.children('img.type').attr('src', src); //change the type image src of the parent
 						for (i = 0; i < elements.length; i++) elements.eq(i).children('img.type').attr('src', subsrc); //change the type image of all the children
 						closetype(); //close the window
+						success = true;
 					}
 					else alert(valueworks.message); //otherwise, alert so
 				}
+				else { //if not a Byte_Array or Int_Array
+					var src = images[tagtype];
+					var valueworks = valuecheck(src, savetag.attr('value')); //find if it is an allowable value
+					if (valueworks.success) { //if it is
+						savetag.children('span').text(savetag.attr('key') + ': ' + formatvalue(savetag.attr('value'), src)); //if going between a number and a string, add/remove the quotation marks
+						savetag.children('img.type').attr('src', src); //change the image src
+						closetype(); //close the window
+						success = true;
+					}
+					else alert(valueworks.message); //if it isn't, alert so
+				}
 			}
 			remakeimages();
+			if (success) {
+				$.ajax({
+					'url': '/editnbt/coerce',
+					'type': 'POST',
+					'data': JSON.stringify({
+						'path': getPath(savetag),
+						'type': tagtype
+					}),
+					'dataType': 'json',
+					'success': editsuccess,
+					'error': editerror
+				});
+			}
 		}
 	});
+	$('button#typecancel').click(closetype);
 	$('button#cancel').click(closeeditor); //bind the editor close button
 	remakeimages(); //images need click handlers
 	$('select').select2(); //initialize the select

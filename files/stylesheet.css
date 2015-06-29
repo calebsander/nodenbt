@@ -142,7 +142,7 @@ button#namesave.blur {
   color:#fff !important;
   background-color:#e74c3c !important;
 }
-button#typesave {
+button#typesave, button#typecancel {
   height:41px;
   border:none;
   z-index:100;
