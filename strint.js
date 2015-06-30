@@ -250,7 +250,7 @@ var lt = e.lt = function (lhs, rhs) {
 		return false;
 	} else if (isNegative(lhs) && isNegative(rhs)) {
 		// Example: -3 < -5
-		return !ltPositive(abs(lhs), abs(rhs));
+		return !eq(lhs, rhs) && !ltPositive(abs(lhs), abs(rhs));
 	} else {
 		return ltPositive(lhs, rhs);
 	}

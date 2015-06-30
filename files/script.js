@@ -339,17 +339,10 @@ function valuecheck(type, value) { //used to check if the provided value (as a s
 			return {success: true, value: String(value)};
 		case images.TAG_Long:
 			var outofrange = {success: false, message: origvalue + " is out of TAG_Long's range"}; //value to return if invalid
-			var bn = new BigNumber(value); //as longs can be larger than JavaScript variables, convert them to a BigNumber object
 			//if value is not an integer or it was not a valid number string, it fails
-			if (value.indexOf('.') > -1 || (!bn.compare(new BigNumber(0)) && value != '0')) return outofrange;
-			if (value[0] == '-') { //if value is negative, convert it to positive to resolve a BigNumber bug
-				bn = new BigNumber(value.substring(1)); //omit the negative sign
-				//if value is too small, it fails
-				if (bn.compare(new BigNumber('9223372036854775808')) == 1) return outofrange;
-			}
-			//if value is too large, it fails
-			else if (bn.compare(new BigNumber('9223372036854775807')) == 1) return outofrange;
-			return {success: true, value: String(bn)};
+			if (value.indexOf('.') != -1 || isNaN(Number(value)) || value === '') return outofrange;
+			if (strnum.gt(value, '9223372036854775807') || strnum.lt(value, '-9223372036854775808')) return outofrange;
+			return {success: true, value: strnum.normalize(value)};
 		case images.TAG_Float: //value fails if it cannot be turned into a number or is '' (which becomes 0 when converted)
 			if (isNaN(Number(value)) || value === '') return {success: false, message: "NaN is out of TAG_Float's range"};
 			return {success: true, value: String(Number(value))};
