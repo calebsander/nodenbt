@@ -50,14 +50,14 @@ $.ajaxTransport('+*', function(options, originalOptions, jqXHR) { //allows clien
 
 var gzip; //whether or not the file is gzipped
 
-function FileDragHover(e) { //triggered when dragging a file onto or off the filedrag div
+function fileDragHover(e) { //triggered when dragging a file onto or off the filedrag div
 	e.stopPropagation();
 	e.preventDefault();
 	if (e.type == 'dragover') $('div#filedrag').addClass('hover').text('Drop file here'); //if dragged onto
 	else $('div#filedrag').removeClass('hover').text('Upload'); //if dragged off
 }
-function FileSelectHandler(e) { //triggered when drogging a file onto the filedrag div
-	FileDragHover(e);
+function fileSelectHandler(e) { //triggered when drogging a file onto the filedrag div
+	fileDragHover(e);
 	if (e.originalEvent.dataTransfer && e.originalEvent.dataTransfer.files) var files = e.originalEvent.dataTransfer.files;
 	else return;
 	var reader;
@@ -117,12 +117,14 @@ function togglecontainer() { //triggered when clicking on a Byte_Array, Int_Arra
 }
 
 function renderJSON(data, key, root) { //a recursive function to create an element that represents a tag
-	//key will be undefined if invoked by Byte_Array, Int_Array, or List; only relevant if displaying the child of a compound
-	//generally, the function finds what type the data is, appends an image with the correct icon, appends a span with the value, and adds mouseover edit function handlers
-	//if the data has a key, it adds compound-specific functions (e.g. rename), sets the key attribute, and adds the key to the displayed value
-	//Byte_Array, Int_Array, List, and Compound call this function on each of their children and then put them inside a hidden container
-	//root will only be true for the root tag
-	//returns the li element
+	/*
+		key will be undefined if invoked by Byte_Array, Int_Array, or List; only relevant if displaying the child of a compound
+		generally, the function finds what type the data is, appends an image with the correct icon, appends a span with the value, and adds mouseover edit function handlers
+		if the data has a key, it adds compound-specific functions (e.g. rename), sets the key attribute, and adds the key to the displayed value
+		Byte_Array, Int_Array, List, and Compound call this function on each of their children and then put them inside a hidden container
+		root will only be true for the root tag
+		returns the li element
+	*/
 	var display = $('<li>');
 	switch (data.type) {
 		case 'TAG_Byte':
@@ -219,7 +221,7 @@ function settypeselect(type) { //used to set the possible values of the tag type
 	typeselect.children().remove(); //remove all the previous options
 	//for each possible coercible value, append a new option to the typeselect
 	for (var i = 0; i < coerceto[type].length; i++) typeselect.append($('<option>').attr('value', coerceto[type][i]).text(coerceto[type][i]));
-	typeselect.select2(); //so it is initialized with an option
+	typeselect.select2(); //so a default option is selected
 }
 
 //Readds the image click handlers
@@ -241,8 +243,8 @@ function editerror() { //on error
 	alert('Editting failed?');
 }
 
-var editor, editororig; //editor is the ace editor variable, editororig is the original value of the editor to compare to
-function edit() {
+var editor, editororig; //editor is the ace editor variable, editororig is the original value of the editor's text to compare to
+function edit() { //open the editor
 	closeall(); //remove all editting windows
 	var parent = $(this).parent(); //parent should be the li element
 	if (parent.is('span')) parent = parent.parent(); //if targetting an element in a List of type Byte_Array or Int_Array, parent will be correct, otherwise parent is incorrectly the span element
@@ -368,11 +370,11 @@ function valuecheck(type, value) { //used to check if the provided value (as a s
 			throw new Error('No such tag: ' + type);
 	}
 }
-function formatvalue(value, type) {
+function formatvalue(value, type) { //put quotes around strings for display purposes, any other value is left unchanged
 	if (type == images.TAG_String) return '"' + value + '"';
 	else return value;
 }
-function save() {
+function save() { //save the editted tag
 	if ($(this).hasClass('btn-info')) { //if it was actually changed
 		var savetype = savetag.children('img.type').attr('src');
 		var editorvalue = editor.getValue();
@@ -396,11 +398,11 @@ function save() {
 			}
 			remakeimages();
 			closeeditor();
-			$.ajax({
+			$.ajax({ //make a very simple AJAX request with the path to the editted tag and its new value
 				'url': '/editnbt/edit',
 				'type': 'POST',
 				'data': JSON.stringify({
-					'path': getPath(savetag),
+					'path': getpath(savetag),
 					'value': valueworks.value
 				}),
 				'dataType': 'json',
@@ -416,13 +418,13 @@ function closeeditor() { //close the editor
 	$('div#editor').hide();
 }
 
-function deleter() {
+function deleter() { //delete the tag where the delete icon was clicked
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
-	$.ajax({
+	$.ajax({ //see save()
 		'url': '/editnbt/delete',
 		'type': 'POST',
-		'data': JSON.stringify({'path': getPath(parent)}),
+		'data': JSON.stringify({'path': getpath(parent)}),
 		'dataType': 'json',
 		'success': editsuccess,
 		'error': editerror
@@ -440,7 +442,7 @@ function showdelete() { //see showedit()
 }
 
 var renameorig; //the original tag name to compare to
-function rename() {
+function rename() { //open the rename panel
 	closeall(); //don't want to be editting anything else at the same time
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
@@ -459,9 +461,40 @@ function showrename() { //see showedit()
 		else $(this).append(renameimg);
 	}
 }
-function savename() {
+function checkname() { //checks the value of the nameinput to see if it conflicts
+	var value = $(this).val(); //get value
+	if (value == renameorig) $('button#namesave').removeClass('btn-success').removeClass('btn-danger'); //if the changed value is the same as the original one, show that nothing will be changed
+	else { //if something is being changed
+		if (value.length < 32768) { //make sure length fixed in a short
+			if (newtag) { //if adding a new tag to a compound
+				var children = savetag.children('ul').children(); //get children of the compound
+				var success = true; //assume it worked unless an error is flagged
+				for (var i = 0; i < children.length; i++) { //go through the children
+					if (children.eq(i).attr('key') == value) { //if one of the tags is already named that, fail
+						success = false;
+						break;
+					}
+				}
+			}
+			else { //see if (newtag)
+				var siblings = savetag.parent().children(); //get siblings (members of the same compound)
+				var success = true;
+				for (var i = 0; i < siblings.length; i++) {
+					if (siblings.eq(i).attr('key') == value && !siblings.eq(i).is(savetag)) { //if another sibling tag is already named that and isn't the one being renamed
+						success = false;
+						break;
+					}
+				}
+			}
+			if (success) $('button#namesave').removeClass('btn-danger').addClass('btn-success'); //if it is legal, show so
+			else $('button#namesave').removeClass('btn-success').addClass('btn-danger'); //otherwise show that it isn't allowed
+		}
+		else $('button#namesave').removeClass('btn-success').addClass('btn-danger');
+	}
+}
+function savename() { //save the new name
 	if ($('button#namesave').hasClass('btn-success')) { //if the name is invalid, do nothing
-		var path = getPath(savetag); //get the path before renaming
+		var path = getpath(savetag); //get the path before renaming
 		var newname = $('input#nameinput').val(); //fetch the new name
 		savetag.attr('key', newname); //save the new key
 		var spanchild = savetag.children('span'); //get the span element that displays the value
@@ -469,7 +502,7 @@ function savename() {
 		else spanchild.text(newname + ': ' + formatvalue(savetag.attr('value'), savetag.children('img').attr('src'))); //if a tag without children, display the new name and the unchanged value
 		closename(); //the name input doesn't need to be shown anymore
 		remakeimages();
-		$.ajax({
+		$.ajax({ //see save()
 			'url': '/editnbt/rename',
 			'type': 'POST',
 			'data': JSON.stringify({
@@ -502,9 +535,12 @@ var tagtype, defaults = { //tagtype is the type of the new tag when creating a c
 	TAG_Int_Array: []
 };
 function createtag(type, key) { //calls renderJSON to generate the tag and adds it as a child of savetag
-	savetag.children('ul').append(renderJSON({type: type, value: defaults[type]}, key));
+	savetag.children('ul').append(renderJSON({
+		'type': type,
+		'value': defaults[type]
+	}, key));
 }
-function add() {
+function add() { //opens the type selection interface for adding a new tag
 	closeall(); //nothing else should be editted at the same time
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
@@ -542,7 +578,7 @@ function closetype() { //close the type selection - quick and easy
 	$('div#tagtype').hide();
 }
 
-function coerce() { //no server code yet
+function coerce() { //open the type selection interface for coercing a tag
 	closeall(); //shouldn't be editing anything else simultaneously
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
@@ -562,6 +598,99 @@ function coerce() { //no server code yet
 	if (parent.attr('key')) $('div#tagtype h3.panel-title').text('Converting ' + parent.attr('key')); //display what is being editted
 	else $('div#tagtype h3.panel-title').text('Converting ' + type);
 	$('div#tagtype').show(); //open the type input
+}
+function savecoerce() { //checks to see if the coercion is valid, saves it if it is
+	if (savetag.children('img.type').attr('src') == images.TAG_List) { //if in a list, each value must be checked individually
+		var success = false;
+		if (tagtype == 'TAG_List' || tagtype == 'TAG_Compound') { //if going to List or Compound (from End), it's allowed
+			savetag.attr('type', tagtype);
+			success = true;
+		}
+		else { //otherwise, a type check is needed
+			var valueworks, elements = savetag.children('ul').children(); //success is coercibility, valueworks is the result of valuecheck(), elements is the array of children
+			success = true;
+			for (var i = 0, j; i < elements.length; i++) { //for each element
+				if (elements.eq(i).attr('value') === undefined) { //converting a Byte_Array or Int_Array
+					var subchildren = elements.eq(i).children('ul').children(), items = []; //subchildren is the set of children of each element of the list, items contains their values
+					for (j = 0; j < subchildren.length; j++) items[j] = subchildren.eq(j).attr('value'); //create an array of values of each child of the Byte_Array or Int_Array
+					valueworks = valuecheck(images[tagtype], items.join('\n')); //check that the values are allowed
+					if (!valueworks.success) { //if it didn't work, record so
+						success = false;
+						alert(valueworks.message);
+						break;
+					}
+				}
+				else { //if not a Byte_Array or Int_Array
+					valueworks = valuecheck(images[tagtype], elements.eq(i).attr('value')); //check the value
+					if (!valueworks.success) { //if it didn't work, record so
+						success = false;
+						alert(valueworks.message);
+						break;
+					}
+				}
+			}
+			if (success) { //if it worked
+				savetag.attr('type', tagtype); //change the type
+				var src = images[tagtype]; //get url for the children's type icons
+				if (tagtype == 'TAG_Byte_Array') var subsrc = images.TAG_Byte; //get url for the subchildren (only matters if coercing a Byte_Array or Int_Array)
+				else var subsrc = images.TAG_Int;
+				for (i = 0; i < elements.length; i++) { //go through the elements
+					if (elements.eq(i).attr('value')) { //if not a Byte_Array or Int_Array
+						elements.eq(i).children('span').text(formatvalue(elements.eq(i).attr('value'), src)); //if going between a number and a string, add/remove the quotation marks
+						elements.eq(i).children('img.type').attr('src', src); //change the icon
+					}
+					else {
+						subchildren = elements.eq(i).children('ul').children(); //get the elements of the Byte_Array or Int_Array
+						for (j = 0; j < subchildren.length; j++) subchildren.eq(j).children('img.type').attr('src', subsrc); //change each of their icons in turn
+						elements.eq(i).children('img.type').attr('src', src); //change the icon
+					}
+				}
+				closetype(); //close the window
+			}
+		}
+	}
+	else { //if dealing with a single member of a compound
+		if (savetag.attr('value') === undefined) { //if a Byte_Array or Int_Array
+			var src = images[tagtype]; //get new image src
+			if (tagtype == 'TAG_Byte_Array') var subsrc = images.TAG_Byte; //get src for children
+			else var subsrc = images.TAG_Int;
+			var elements = savetag.children('ul').children(), items = []; //elements is the list of children, items is the array of their values
+			for (var i = 0; i < elements.length; i++) items[i] = elements.eq(i).attr('value'); //form the list of values
+			var valueworks = valuecheck(src, items.join('\n')); //check values
+			if (valueworks.success) { //if all the children are allowed
+				savetag.children('img.type').attr('src', src); //change the type image src of the parent
+				for (i = 0; i < elements.length; i++) elements.eq(i).children('img.type').attr('src', subsrc); //change the type image of all the children
+				closetype(); //close the window
+				success = true;
+			}
+			else alert(valueworks.message); //otherwise, alert so
+		}
+		else { //if not a Byte_Array or Int_Array
+			var src = images[tagtype];
+			var valueworks = valuecheck(src, savetag.attr('value')); //find if it is an allowable value
+			if (valueworks.success) { //if it is
+				savetag.children('span').text(savetag.attr('key') + ': ' + formatvalue(savetag.attr('value'), src)); //if going between a number and a string, add/remove the quotation marks
+				savetag.children('img.type').attr('src', src); //change the image src
+				closetype(); //close the window
+				success = true;
+			}
+			else alert(valueworks.message); //if it isn't, alert so
+		}
+	}
+	remakeimages();
+	if (success) {
+		$.ajax({ //see save()
+			'url': '/editnbt/coerce',
+			'type': 'POST',
+			'data': JSON.stringify({
+				'path': getpath(savetag),
+				'type': tagtype
+			}),
+			'dataType': 'json',
+			'success': editsuccess,
+			'error': editerror
+		});
+	}
 }
 var coerceimg = $('<img>').addClass('coerce').attr('src', images.coerce).attr('title', 'Convert type');
 function showcoerce() { //see showedit()
@@ -585,10 +714,10 @@ function addudicons(list) { //add ordering icons to a Byte_Array, List, or Int_A
 function up() { //move an element in a list up
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
-	$.ajax({
+	$.ajax({ //see save()
 		'url': '/editnbt/up',
 		'type': 'POST',
-		'data': JSON.stringify({'path': getPath(parent)}),
+		'data': JSON.stringify({'path': getpath(parent)}),
 		'dataType': 'json',
 		'success': editsuccess,
 		'error': editerror
@@ -608,13 +737,13 @@ function showup() { //see showedit()
 		else $(this).append(upimg);
 	}
 }
-function down() { //see up()
+function down() { //move an element in a list down; see up()
 	var parent = $(this).parent();
 	if (parent.is('span')) parent = parent.parent();
-	$.ajax({
+	$.ajax({ //see save()
 		'url': '/editnbt/down',
 		'type': 'POST',
-		'data': JSON.stringify({'path': getPath(parent)}),
+		'data': JSON.stringify({'path': getpath(parent)}),
 		'dataType': 'json',
 		'success': editsuccess,
 		'error': editerror
@@ -641,9 +770,9 @@ function closeall() { //close all editing windows
 	closetype();
 }
 
-function getPath(element) { //gets an array representing the path to the tag
+function getpath(element) { //get an array representing the path to the tag; used for editting tags
 	if (element.parent().parent().is('li')) { //if not the top element
-		var path = getPath(element.parent().parent()); //get parent's path, then add to it
+		var path = getpath(element.parent().parent()); //get parent's path, then add to it
 		if (element.attr('key')) path.push(element.attr('key')); //if in a compound tag and has key
 		else { //if no key, either in a list or in a compound without a key
 			if (element.parent().parent().children('img.type').attr('src') == images.TAG_Compound) path.push(''); //if a nameless compound tag
@@ -651,14 +780,11 @@ function getPath(element) { //gets an array representing the path to the tag
 		}
 		return path;
 	}
-	else { //if the top element
-		if (element.attr('key')) return [element.attr('key')];
-		else return [''];
-	}
+	else return []; //if the top element
 }
 
 $(document).ready(function() { //mess with elements when they have all loaded
-	$('div#filedrag').on('dragover', FileDragHover).on('dragover', FileDragHover).on('drop', FileSelectHandler);
+	$('div#filedrag').on('dragover', fileDragHover).on('dragover', fileDragHover).on('drop', fileSelectHandler);
 
 	editor = ace.edit('ace'); //make a new ace editor
 	editor.setShowPrintMargin(false); //don't show an annoying vertical line
@@ -673,50 +799,23 @@ $(document).ready(function() { //mess with elements when they have all loaded
 	};
 
 	$('div#filedrag').hover(function() { //tell the user that they can drop a file on the filedrop
-		$(this).text('Drop file here');
+		$(this).text('Drop file here'); //on mouseover
 	}, function() {
-		$(this).text('Upload');
+		$(this).text('Upload'); //on mouseout
 	});
 
 	$('button#save').click(save); //bind the save function
 	$('input#nameinput').keydown(function(e) { //add an event handler for typing in the name input
-		if (e.which == 13) { //if enter is pressed
-			if (newtag) compoundsave(); //if adding a new tag to a compound, do that
-			else savename(); //otherwise, just rename the current tag
-		}
-		else if (e.which == 27) closename(); //if escape is pressed, close the input box
-		else { //if text is being entered
-			setTimeout($.proxy(function() { //allow new value to be registered before checking it
-				var value = $(this).val(); //get value
-				if (value == renameorig) $('button#namesave').removeClass('btn-success').removeClass('btn-danger'); //if the changed value is the same as the original one, show that nothing will be changed
-				else { //if something is being changed
-					if (value.length < 32768) { //make sure length fixed in a short
-						if (newtag) { //if adding a new tag to a compound
-							var children = savetag.children('ul').children(); //get children of the compound
-							var success = true; //assume it worked unless an error is flagged
-							for (var i = 0; i < children.length; i++) { //go through the children
-								if (children.eq(i).attr('key') == value) { //if one of the tags is already named that, fail
-									success = false;
-									break;
-								}
-							}
-						}
-						else { //see if (newtag)
-							var siblings = savetag.parent().children(); //get siblings (members of the same compound)
-							var success = true;
-							for (var i = 0; i < siblings.length; i++) {
-								if (siblings.eq(i).attr('key') == value && !siblings.eq(i).is(savetag)) { //if another sibling tag is already named that and isn't the one being renamed
-									success = false;
-									break;
-								}
-							}
-						}
-						if (success) $('button#namesave').removeClass('btn-danger').addClass('btn-success'); //if it is legal, show so
-						else $('button#namesave').removeClass('btn-success').addClass('btn-danger'); //otherwise show that it isn't allowed
-					}
-					else $('button#namesave').removeClass('btn-success').addClass('btn-danger');
-				}
-			}, this), 0);
+		switch (e.which) {
+			case 13: //if enter is pressed
+				if (newtag) compoundsave(); //if adding a new tag to a compound, do that
+				else savename(); //otherwise, just rename the current tag
+				break;
+			case 27: //if escape is pressed, close the input box
+				closename();
+				break;
+			default: //if text is being entered
+				setTimeout($.proxy(checkname, this), 0); //allow new value to be registered before checking it
 		}
 	}).focus(function() { //so the button's style matches that of the input
 		$('button#namesave').removeClass('blur').addClass('focus');
@@ -734,102 +833,9 @@ $(document).ready(function() { //mess with elements when they have all loaded
 			$('div#tagname').show();
 			$('input#nameinput').focus(); //transitioning to name input, so move typehead there
 		}
-		else { //if coercing, check to make sure it's allowed
-			if (savetag.children('img.type').attr('src') == images.TAG_List) { //if in a list, each value must be checked individually
-				var success = false;
-				if (tagtype == 'TAG_List' || tagtype == 'TAG_Compound') { //if going to List or Compound (from End), it's allowed
-					savetag.attr('type', tagtype);
-					success = true;
-				}
-				else { //otherwise, a type check is needed
-					var valueworks, elements = savetag.children('ul').children(); //success is coercibility, valueworks is the result of valuecheck(), elements is the array of children
-					success = true;
-					for (var i = 0, j; i < elements.length; i++) { //for each element
-						if (elements.eq(i).attr('value') === undefined) { //converting a Byte_Array or Int_Array
-							var subchildren = elements.eq(i).children('ul').children(), items = []; //subchildren is the set of children of each element of the list, items contains their values
-							for (j = 0; j < subchildren.length; j++) items[j] = subchildren.eq(j).attr('value'); //create an array of values of each child of the Byte_Array or Int_Array
-							valueworks = valuecheck(images[tagtype], items.join('\n')); //check that the values are allowed
-							if (!valueworks.success) { //if it didn't work, record so
-								success = false;
-								alert(valueworks.message);
-								break;
-							}
-						}
-						else { //if not a Byte_Array or Int_Array
-							valueworks = valuecheck(images[tagtype], elements.eq(i).attr('value')); //check the value
-							if (!valueworks.success) { //if it didn't work, record so
-								success = false;
-								alert(valueworks.message);
-								break;
-							}
-						}
-					}
-					if (success) { //if it worked
-						savetag.attr('type', tagtype); //change the type
-						var src = images[tagtype]; //get url for the children's type icons
-						if (tagtype == 'TAG_Byte_Array') var subsrc = images.TAG_Byte; //get url for the subchildren (only matters if coercing a Byte_Array or Int_Array)
-						else var subsrc = images.TAG_Int;
-						for (i = 0; i < elements.length; i++) { //go through the elements
-							if (elements.eq(i).attr('value')) { //if not a Byte_Array or Int_Array
-								elements.eq(i).children('span').text(formatvalue(elements.eq(i).attr('value'), src)); //if going between a number and a string, add/remove the quotation marks
-								elements.eq(i).children('img.type').attr('src', src); //change the icon
-							}
-							else {
-								subchildren = elements.eq(i).children('ul').children(); //get the elements of the Byte_Array or Int_Array
-								for (j = 0; j < subchildren.length; j++) subchildren.eq(j).children('img.type').attr('src', subsrc); //change each of their icons in turn
-								elements.eq(i).children('img.type').attr('src', src); //change the icon
-							}
-						}
-						closetype(); //close the window
-					}
-				}
-			}
-			else { //if dealing with a single member of a compound
-				if (savetag.attr('value') === undefined) { //if a Byte_Array or Int_Array
-					var src = images[tagtype]; //get new image src
-					if (tagtype == 'TAG_Byte_Array') var subsrc = images.TAG_Byte; //get src for children
-					else var subsrc = images.TAG_Int;
-					var elements = savetag.children('ul').children(), items = []; //elements is the list of children, items is the array of their values
-					for (var i = 0; i < elements.length; i++) items[i] = elements.eq(i).attr('value'); //form the list of values
-					var valueworks = valuecheck(src, items.join('\n')); //check values
-					if (valueworks.success) { //if all the children are allowed
-						savetag.children('img.type').attr('src', src); //change the type image src of the parent
-						for (i = 0; i < elements.length; i++) elements.eq(i).children('img.type').attr('src', subsrc); //change the type image of all the children
-						closetype(); //close the window
-						success = true;
-					}
-					else alert(valueworks.message); //otherwise, alert so
-				}
-				else { //if not a Byte_Array or Int_Array
-					var src = images[tagtype];
-					var valueworks = valuecheck(src, savetag.attr('value')); //find if it is an allowable value
-					if (valueworks.success) { //if it is
-						savetag.children('span').text(savetag.attr('key') + ': ' + formatvalue(savetag.attr('value'), src)); //if going between a number and a string, add/remove the quotation marks
-						savetag.children('img.type').attr('src', src); //change the image src
-						closetype(); //close the window
-						success = true;
-					}
-					else alert(valueworks.message); //if it isn't, alert so
-				}
-			}
-			remakeimages();
-			if (success) {
-				$.ajax({
-					'url': '/editnbt/coerce',
-					'type': 'POST',
-					'data': JSON.stringify({
-						'path': getPath(savetag),
-						'type': tagtype
-					}),
-					'dataType': 'json',
-					'success': editsuccess,
-					'error': editerror
-				});
-			}
-		}
+		else savecoerce(); //if coercing, check to make sure it's allowed
 	});
-	$('button#typecancel').click(closetype);
-	$('button#cancel').click(closeeditor); //bind the editor close button
+	$('button#typecancel').click(closetype); //bind the tag type close button
 	remakeimages(); //images need click handlers
 	$('select').select2(); //initialize the select
 });
