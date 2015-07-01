@@ -509,8 +509,18 @@ http.createServer(function(req, res) {
 						list[index] = temp;
 						break;
 					case '/editnbt/edit':
-						var tag = walkPath(data.path);
-						tag.value = data.value;
+						var tag = data.path.pop(); //see code for up
+						var parent = walkPath(data.path);
+						switch (parent.type) { //save the new value (different types of parents require different fashions of locating the child)
+							case 'TAG_List':
+								parent.value.list[tag] = data.value;
+								break;
+							case 'TAG_Compound':
+								parent[tag].value = data.value;
+								break;
+							default: //TAG_Byte_Array or TAG_Int_Array
+								parent.value[tag] = data.value;
+						}
 						break;
 					case '/editnbt/rename':
 						var tag = data.path.pop(); //see code for up

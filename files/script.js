@@ -432,10 +432,7 @@ function deleter() { //delete the tag where the delete icon was clicked
 	if (parent.is(savetag) || parent.find(savetag).length) closeall(); //if we deleted a tag that was being edited, close the edit windows
 	var ulcontainer = parent.parent();
 	parent.remove(); //delete the tag
-	if (ulcontainer.parent().children('img.type').attr('src') != images.TAG_Compound) {
-		console.log(ulcontainer);
-		addudicons(ulcontainer); //if on a list/array, redo the ordering icons
-	}
+	if (ulcontainer.parent().children('img.type').attr('src') != images.TAG_Compound) addudicons(ulcontainer); //if on a list/array, redo the ordering icons
 	remakeimages();
 }
 var deleteimg = $('<img>').addClass('delete').attr('src', images['delete']).attr('title', 'Delete tag');
