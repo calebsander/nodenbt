@@ -520,7 +520,17 @@ http.createServer(function(req, res) {
 						break;
 					case '/editnbt/delete':
 						var tag = data.path.pop(); //see code for up
-						delete walkPath(data.path).value[tag]; //remove the tag
+						var parent = walkPath(data.path);
+						switch (parent.type) { //remove the tag (different types of parents require different fashions of locating the child)
+							case 'TAG_List':
+								parent.value.list.splice(tag, 1);
+								break;
+							case 'TAG_Compound':
+								delete parent.value[tag];
+								break;
+							default: //TAG_Byte_Array or TAG_Int_Array
+								parent.value.splice(tag, 1);
+						}
 						break;
 					case '/editnbt/coerce':
 						var tag = walkPath(data.path); //get the tag being editted
