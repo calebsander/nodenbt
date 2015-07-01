@@ -538,6 +538,22 @@ http.createServer(function(req, res) {
 							else if (data.type == 'TAG_String') tag.value = String(tag.value); //convert numbers to strings
 							tag.type = data.type;
 						}
+						break;
+					case '/editnbt/add':
+						var parent = walkPath(data.path); //get tag being added to
+						switch (parent.type) {
+							case 'TAG_List':
+								parent.value.list.push(data.value);
+								break;
+							case 'TAG_Compound':
+								parent.value[data.key] = {
+									'type': data.type,
+									'value': data.value
+								};
+								break;
+							default: //TAG_Byte_Array or TAG_Int_Array
+								parent.value.push(data.value);
+						}
 				}
 				res.setHeader('content-type', 'application/json');
 				res.end(JSON.stringify({success: true}));

@@ -165,7 +165,7 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 			}
 			else {
 				display.attr('type', String(data.value.type)).append($('<img>').addClass('type').attr('src', images.TAG_List).attr('title', 'TAG_List').click(togglecontainer).mouseover(removeicons).mouseover(showdelete).mouseover(showadd)).append(container);
-				if (coerceto[String(data.value.type)]) display.children('img').mouseover(showcoerce); //not all lists are coercible (e.g. TAG_Compound)
+				if (coerceto[String(data.value.type)]) display.children('img.type').mouseover(showcoerce); //not all lists are coercible (e.g. TAG_Compound)
 				return display;
 			}
 		case 'TAG_Compound':
@@ -183,8 +183,8 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 			var container = $('<ul>').addClass('nbtcontainer').hide();
 			for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Int', value: data.value[i]}));
 			addudicons(container);
-			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', images.TAG_Int_Array).attr('title', 'TAG_Int_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce)).append(container);
-			else return display.append($('<img>').addClass('type').attr('src', images.TAG_Int_Array).attr('title', 'TAG_Int_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete)).append(container);
+			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', images.TAG_Int_Array).attr('title', 'TAG_Int_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce).mouseover(showadd)).append(container);
+			else return display.append($('<img>').addClass('type').attr('src', images.TAG_Int_Array).attr('title', 'TAG_Int_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showadd)).append(container);
 		default: //should never trigger, but if it did, it would mess up everything, so better to just quit
 			throw new Error('No such tag: ' + data.type);
 	}
@@ -392,7 +392,7 @@ function save() { //save the editted tag
 			else { //otherwise, it is much simpler
 				savetag.attr('value', valueworks.value); //record new value
 				var spanchild = savetag.children('span'); //get the span element that displays the value
-				var savevalue = formatvalue(valueworks.value, savetag.children('img').attr('src'));
+				var savevalue = formatvalue(valueworks.value, savetag.children('img.type').attr('src'));
 				if (savetag.attr('key')) spanchild.text(savetag.attr('key') + ': ' + savevalue); //just change the text, as in renderJSON
 				else spanchild.text(savevalue);
 			}
@@ -499,7 +499,7 @@ function savename() { //save the new name
 		savetag.attr('key', newname); //save the new key
 		var spanchild = savetag.children('span'); //get the span element that displays the value
 		if (savetag.attr('value') === undefined) spanchild.text(newname + ':'); //if the tag has children, just display the new name
-		else spanchild.text(newname + ': ' + formatvalue(savetag.attr('value'), savetag.children('img').attr('src'))); //if a tag without children, display the new name and the unchanged value
+		else spanchild.text(newname + ': ' + formatvalue(savetag.attr('value'), savetag.children('img.type').attr('src'))); //if a tag without children, display the new name and the unchanged value
 		closename(); //the name input doesn't need to be shown anymore
 		remakeimages();
 		$.ajax({ //see save()
@@ -522,23 +522,40 @@ function closename() { //close the name input
 }
 
 var tagtype, defaults = { //tagtype is the type of the new tag when creating a compound, defaults stores the values to initialize new elements at
-	TAG_Byte: 0,
-	TAG_Short: 0,
-	TAG_Int: 0,
-	TAG_Long: '0',
-	TAG_Float: 0,
-	TAG_Double: 0,
-	TAG_Byte_Array: [],
-	TAG_String: '',
-	TAG_List: {type: null, list: []},
-	TAG_Compound: {},
-	TAG_Int_Array: []
+	'TAG_Byte':       0,
+	'TAG_Short':      0,
+	'TAG_Int':        0,
+	'TAG_Long':      '0',
+	'TAG_Float':      0,
+	'TAG_Double':     0,
+	'TAG_Byte_Array': [],
+	'TAG_String':     '',
+	'TAG_List':       {
+		'type': null,
+		'list': []
+	},
+	'TAG_Compound':   {},
+	'TAG_Int_Array':  []
 };
 function createtag(type, key) { //calls renderJSON to generate the tag and adds it as a child of savetag
 	savetag.children('ul').append(renderJSON({
 		'type': type,
 		'value': defaults[type]
 	}, key));
+	if (savetag.children('img.type').attr('src') != images.TAG_Compound) addudicons(savetag.children('ul'));
+	$.ajax({ //see save()
+		'url': '/editnbt/add',
+		'type': 'POST',
+		'data': JSON.stringify({
+			'path': getpath(savetag),
+			'type': type,
+			'value': defaults[type],
+			'key': key
+		}),
+		'dataType': 'json',
+		'success': editsuccess,
+		'error': editerror
+	});
 }
 function add() { //opens the type selection interface for adding a new tag
 	closeall(); //nothing else should be editted at the same time
@@ -559,7 +576,11 @@ function add() { //opens the type selection interface for adding a new tag
 		settypeselect('null'); //show all possible new tags
 		$('div#tagtype').show(); //allow tag type to be selected
 	}
-	else createtag(parent.attr('type')); //otherwise, adding an element to a list; type is implied and name is not applicable, so create it immediately
+	else if (parent.attr('type')) createtag(parent.attr('type')); //adding an element to a list; type is implied and name is not applicable, so create it immediately
+	else { //adding an element to a byte array or int array
+		var parenttype = parent.children('img.type').attr('title');
+		createtag(parenttype.substring(0, parenttype.length - '_Array'.length)); //take off the array ending on the type
+	}
 }
 var addimg = $('<img>').addClass('add').attr('src', images.add).attr('title', 'Add tag');
 function showadd() { //see showedit()
