@@ -606,6 +606,7 @@ function add() { //opens the type selection interface for adding a new tag
 		var parenttype = parent.children('img.type').attr('title');
 		createtag(parenttype.substring(0, parenttype.length - '_Array'.length)); //take off the array ending on the type
 	}
+	parent.children('ul').show();
 }
 var addimg = $('<img>').addClass('add').attr('src', images.add).attr('title', 'Add tag');
 function showadd() { //see showedit()
