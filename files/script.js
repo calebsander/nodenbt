@@ -149,8 +149,8 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 			var container = $('<ul>').addClass('nbtcontainer').hide();
 			for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Byte', value: data.value[i]}));
 			addudicons(container);
-			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', images.TAG_Byte_Array).attr('title', 'TAG_Byte_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce)).append(container);
-			else return display.append($('<img>').addClass('type').attr('src', images.TAG_Byte_Array).attr('title', 'TAG_Byte_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete)).append(container);
+			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', images.TAG_Byte_Array).attr('title', 'TAG_Byte_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce).mouseover(showadd)).append(container);
+			else return display.append($('<img>').addClass('type').attr('src', images.TAG_Byte_Array).attr('title', 'TAG_Byte_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showadd)).append(container);
 		case 'TAG_String':
 			if (key) return display.attr('key', key).attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_String).attr('title', 'TAG_String')).append($('<span>').text(key + ': ' + '"' + data.value + '"').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce));
 			else return display.attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_String).attr('title', 'TAG_String')).append($('<span>').text('"' + data.value + '"').mouseover(removeicons).mouseover(showedit).mouseover(showdelete));
@@ -171,6 +171,7 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		case 'TAG_Compound':
 			var container = $('<ul>').addClass('nbtcontainer').hide();
 			for (var i in data.value) container.append(renderJSON(data.value[i], i));
+			sortkeys(container);
 			var image = $('<img>').addClass('type').attr('src', images.TAG_Compound).attr('title', 'TAG_Compound').click(togglecontainer);
 			if (key) return display.attr('key', key).append(image).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showdelete).mouseover(showrename).mouseover(showadd)).append(container);
 			else {
@@ -187,6 +188,25 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 			else return display.append($('<img>').addClass('type').attr('src', images.TAG_Int_Array).attr('title', 'TAG_Int_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showadd)).append(container);
 		default: //should never trigger, but if it did, it would mess up everything, so better to just quit
 			throw new Error('No such tag: ' + data.type);
+	}
+}
+function sortkeys(container) { //does an insertion sort on the elements in a compound by key
+	var elements = container.children(); //get the tags to sort
+	var testindex, //index of current tag being tested
+		nextindex, //index of the next tag to display
+		nextkey, //the 'first' key (sorted alphabetically) of the remaining tags
+		testkey; //the current key being tested
+	while (elements.length) { //tags are removed from elements after being added until none are left
+		nextkey = elements.eq(0).attr('key'); //assume the first element will be added
+		nextindex = 0;
+		for (testindex = 1; testindex < elements.length; testindex++) { //go over the remaining tags looking for one with a key that should come first
+			testkey = elements.eq(testindex).attr('key');
+			if (testkey.toLowerCase() < nextkey.toLowerCase()) { //the comparison
+				nextkey = testkey;
+				nextindex = testindex;
+			}
+		}
+		container.append(elements.splice(nextindex, 1)); //append the chosen element to the container
 	}
 }
 
@@ -502,6 +522,7 @@ function savename() { //save the new name
 		var spanchild = savetag.children('span'); //get the span element that displays the value
 		if (savetag.attr('value') === undefined) spanchild.text(newname + ':'); //if the tag has children, just display the new name
 		else spanchild.text(newname + ': ' + formatvalue(savetag.attr('value'), savetag.children('img.type').attr('src'))); //if a tag without children, display the new name and the unchanged value
+		sortkeys(savetag.parent());
 		closename(); //the name input doesn't need to be shown anymore
 		remakeimages();
 		$.ajax({ //see save()
@@ -540,10 +561,12 @@ var tagtype, defaults = { //tagtype is the type of the new tag when creating a c
 	'TAG_Int_Array':  []
 };
 function createtag(type, key) { //calls renderJSON to generate the tag and adds it as a child of savetag
-	savetag.children('ul').append(renderJSON({
+	var container = savetag.children('ul');
+	container.append(renderJSON({
 		'type': type,
 		'value': defaults[type]
 	}, key));
+	if (key) sortkeys(container);
 	if (savetag.children('img.type').attr('src') != images.TAG_Compound) addudicons(savetag.children('ul'));
 	$.ajax({ //see save()
 		'url': '/editnbt/add',

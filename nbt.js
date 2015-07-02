@@ -89,8 +89,8 @@ function readDouble(offset) {
 
 function readByte_Array(offset) {
 	var originaloffset = offset;
-	var bytesint = readInt(offset); //read the length of the array
-	offset += bytesint.length;
+	var sizeint = readInt(offset); //read the length of the array
+	offset += sizeint.length;
 
 	var Byte_Array = [];
 	var element;
