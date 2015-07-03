@@ -25,13 +25,10 @@ var TAG_Int_Array = 0x0B;
 
 var longuppershift = '4294967296'; //stores the value needed to multiply an integer to shift it left 32 bits - for long math
 
-/*
-	readnbt - the raw file data to be read
-	nbtobject - a JavaScript object representing the data
-	writenbt - raw file data to be written
-	gzip - whether the file was compressed
-*/
-var readnbt, nbtobject, writenbt, gzip;
+var readnbt, //a buffer containing the raw file data to be read
+	nbtobject, //a JavaScript object representing the data
+	writenbt, //raw file data to be written
+	gzip; //whether the file was compressed
 
 //READ NBT - read a certain tag at a certain offset in the Buffer
 //each function returns the read value and its length so the offset can be changed accordingly

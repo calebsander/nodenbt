@@ -48,7 +48,8 @@ $.ajaxTransport('+*', function(options, originalOptions, jqXHR) { //allows clien
 	}
 });
 
-var gzip; //whether or not the file is gzipped
+var gzip; //whether the file is gzipped
+var modified = false; //whether the file has been editted
 
 function fileDragHover(e) { //triggered when dragging a file onto or off the filedrag div
 	e.stopPropagation();
@@ -454,6 +455,7 @@ function save() { //save the editted tag
 				'success': editsuccess,
 				'error': editerror
 			});
+			modified = true;
 		}
 		else alert(valueworks.message); //should be cleaned up
 	}
@@ -474,6 +476,7 @@ function deleter() { //delete the tag where the delete icon was clicked
 		'success': editsuccess,
 		'error': editerror
 	});
+	modified = true;
 	if (parent.is(savetag) || parent.find(savetag).length) closeall(); //if we deleted a tag that was being edited, close the edit windows
 	var ulcontainer = parent.parent();
 	parent.remove(); //delete the tag
@@ -561,6 +564,7 @@ function savename() { //save the new name
 			'success': editsuccess,
 			'error': editerror
 		});
+		modified = true;
 	}
 }
 function closename() { //close the name input
@@ -606,6 +610,7 @@ function createtag(type, key) { //calls renderJSON to generate the tag and adds 
 		'success': editsuccess,
 		'error': editerror
 	});
+	modified = true;
 }
 function add() { //opens the type selection interface for adding a new tag
 	closeall(); //nothing else should be editted at the same time
@@ -762,6 +767,7 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 			'success': editsuccess,
 			'error': editerror
 		});
+		modified = true;
 	}
 }
 var coerceimg = $('<img>').addClass('coerce').attr('src', images.coerce).attr('title', 'Convert type');
@@ -794,6 +800,7 @@ function up() { //move an element in a list up
 		'success': editsuccess,
 		'error': editerror
 	});
+	modified = true;
 	var prev = parent.prev(); //find previous sibling before detaching the element
 	parent.detach(); //remove the element but keep its mouseover handlers
 	prev.before(parent); //put the element before its previous sibling
@@ -820,6 +827,7 @@ function down() { //move an element in a list down; see up()
 		'success': editsuccess,
 		'error': editerror
 	});
+	modified = true;
 	var next = parent.next();
 	parent.detach();
 	next.after(parent);
@@ -908,6 +916,13 @@ $(document).ready(function() { //mess with elements when they have all loaded
 		else savecoerce(); //if coercing, check to make sure it's allowed
 	});
 	$('button#typecancel').click(closetype); //bind the tag type close button
+	$('a#download').click(function() {
+		modified = false;
+	});
 	remakeimages(); //images need click handlers
 	$('select').select2(); //initialize the select
 });
+
+window.onbeforeunload = function() {
+	if (modified) return 'You have unsaved changes; are you sure you want to leave?';
+};
