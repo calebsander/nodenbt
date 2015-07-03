@@ -185,8 +185,7 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 			}));
 		}
 		addudicons(container);
-		mousetarget.mouseover(removeicons).mouseover(showdelete).mouseover(showadd);
-		if (coerceto[String(data.value.type)]) mousetarget.mouseover(showcoerce); //not all lists are coercible (e.g. TAG_Compound)
+		mousetarget.mouseover(removeicons).mouseover(showdelete).mouseover(showadd).mouseover(showcoerce);
 	}
 	else if (data.type == 'TAG_Compound') {
 		container = newcontainer();
@@ -612,7 +611,7 @@ function createtag(type, key) { //calls renderJSON to generate the tag and adds 
 	});
 	modified = true;
 }
-function add() { //opens the type selection interface for adding a new tag
+function add() { //opens the type selection interface for adding a new tag to a compound, or just adds a new tag to a TAG_List, TAG_Byte_Array, or TAG_Int_Array
 	closeall(); //nothing else should be editted at the same time
 	var parent = $(this).parent(); //see edit()
 	if (parent.is('span')) parent = parent.parent();
@@ -631,7 +630,10 @@ function add() { //opens the type selection interface for adding a new tag
 		settypeselect('null'); //show all possible new tags
 		$('div#tagtype').show(); //allow tag type to be selected
 	}
-	else if (parent.attr('type')) createtag(parent.attr('type')); //adding an element to a list; type is implied and name is not applicable, so create it immediately
+	else if (parent.attr('type')) { //adding an element to a list; type is implied and name is not applicable, so create it immediately
+		if (parent.attr('type') == 'null') alert('Cannot add an element to a null-typed list. Convert the type first.');
+		else createtag(parent.attr('type'));
+	}
 	else { //adding an element to a byte array or int array
 		var parenttype = parent.children('img.type').attr('title');
 		createtag(parenttype.substring(0, parenttype.length - '_Array'.length)); //take off the array ending on the type
@@ -722,7 +724,6 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 						elements.eq(i).children('img.type').attr('src', src); //change the icon
 					}
 				}
-				closetype(); //close the window
 			}
 		}
 	}
@@ -737,7 +738,6 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 			if (valueworks.success) { //if all the children are allowed
 				savetag.children('img.type').attr('src', src); //change the type image src of the parent
 				for (i = 0; i < elements.length; i++) elements.eq(i).children('img.type').attr('src', subsrc); //change the type image of all the children
-				closetype(); //close the window
 				success = true;
 			}
 			else alert(valueworks.message); //otherwise, alert so
@@ -748,7 +748,6 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 			if (valueworks.success) { //if it is
 				savetag.children('span').text(savetag.attr('key') + ': ' + formatvalue(savetag.attr('value'), src)); //if going between a number and a string, add/remove the quotation marks
 				savetag.children('img.type').attr('src', src); //change the image src
-				closetype(); //close the window
 				success = true;
 			}
 			else alert(valueworks.message); //if it isn't, alert so
@@ -768,13 +767,17 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 			'error': editerror
 		});
 		modified = true;
+		closetype(); //close the window
 	}
 }
 var coerceimg = $('<img>').addClass('coerce').attr('src', images.coerce).attr('title', 'Convert type');
 function showcoerce() { //see showedit()
 	if (!$(this).parent().children('img.coerce').is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) {
-		if ($(this).is('img')) $(this).after(coerceimg);
-		else $(this).append(coerceimg);
+		var type = $(this).parent().attr('type'); //will contain the type for a TAG_List, otherwise it will be undefined
+		if (type === undefined || coerceto[type]) { //not all lists are coercible (e.g. TAG_Compound)
+			if ($(this).is('img')) $(this).after(coerceimg);
+			else $(this).append(coerceimg);
+		}
 	}
 }
 
