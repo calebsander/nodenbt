@@ -84,7 +84,10 @@ div#nbt li:before {
   left:0px;
   width:11px;
   height:11px;
-  border-bottom:1px solid black;
+  border-bottom:1px solid #bbb;
+}
+div#nbt li.shown:before {
+  border-bottom-color:black;
 }
 div#nbt li:last-child:before {
   border-left:1px solid black;

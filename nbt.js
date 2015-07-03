@@ -32,35 +32,24 @@ var readnbt, //a buffer containing the raw file data to be read
 
 //READ NBT - read a certain tag at a certain offset in the Buffer
 //each function returns the read value and its length so the offset can be changed accordingly
-
-function readEnd(offset) {
-	return {
-		'value': null,
-		'length': 0
-	};
-}
-
 function readByte(offset) {
 	return {
 		'value': readnbt.readInt8(offset),
 		'length': 1
 	};
 }
-
 function readShort(offset) {
 	return {
 		'value': readnbt.readInt16BE(offset),
 		'length': 2
 	};
 }
-
 function readInt(offset) {
 	return {
 		'value': readnbt.readInt32BE(offset),
 		'length': 4
 	};
 }
-
 function readLong(offset) {
 	var upperint = readInt(offset);
 	offset += upperint.length;
@@ -69,21 +58,18 @@ function readLong(offset) {
 		'length': 8
 	};
 }
-
 function readFloat(offset) {
 	return {
 		'value': readnbt.readFloatBE(offset),
 		'length': 4
 	};
 }
-
 function readDouble(offset) {
 	return {
 		'value': readnbt.readDoubleBE(offset),
 		'length': 8
 	};
 }
-
 function readByte_Array(offset) {
 	var originaloffset = offset;
 	var sizeint = readInt(offset); //read the length of the array
@@ -102,7 +88,6 @@ function readByte_Array(offset) {
 		'length': offset - originaloffset
 	};
 }
-
 function readString(offset) {
 	var originaloffset = offset;
 	var bytesshort = readShort(offset); //read the length of the string
@@ -114,7 +99,6 @@ function readString(offset) {
 		'length': offset - originaloffset
 	};
 }
-
 function readList(offset) {
 	var originaloffset = offset;
 	var readFunction, readType;
@@ -142,7 +126,6 @@ function readList(offset) {
 		'length': offset - originaloffset
 	};
 }
-
 function readCompound(offset) {
 	var originaloffset = offset;
 	var readName, //name of the read tag
@@ -175,7 +158,6 @@ function readCompound(offset) {
 		'length': offset - originaloffset
 	};
 }
-
 function readInt_Array(offset) { //see readByte_Array
 	var originaloffset = offset;
 	var sizeint = readInt(offset);
@@ -194,13 +176,11 @@ function readInt_Array(offset) { //see readByte_Array
 		'length': offset - originaloffset
 	};
 }
-
 //Select function to read tag and what its type is by the tag ID
 function extractType(typebyte) {
 	var readFunction, readType;
 	switch (typebyte.value) { //choose which read function to use based on the type of element
-		case TAG_End:
-			readFunction = readEnd;
+		case TAG_End: //should never be read
 			readType = null;
 			break;
 		case TAG_Byte:
@@ -257,28 +237,25 @@ function extractType(typebyte) {
 }
 
 //WRITE NBT - write a certain tag's payload to the end of the Buffer
-
+//There is no need to keep track of the offset (unlike in the read functions) because the offset is always the length of the buffer
 function writeByte(value) {
 	if (value < -128 || value > 127) throw new Error('out of range: ' + String(value));
 	var bytebuffer = new Buffer(1);
 	bytebuffer.writeInt8(value, 0);
 	writenbt = Buffer.concat([writenbt, bytebuffer]);
 }
-
 function writeShort(value) {
 	if (value < -32768 || value > 32767) throw new Error('out of range: ' + String(value));
 	var shortbuffer = new Buffer(2);
 	shortbuffer.writeInt16BE(value, 0);
 	writenbt = Buffer.concat([writenbt, shortbuffer]);
 }
-
 function writeInt(value) {
 	if (value < -2147483648 || value > 2147483647) throw new Error('out of range: ' + String(value));
 	var intbuffer = new Buffer(4);
 	intbuffer.writeInt32BE(value, 0);
 	writenbt = Buffer.concat([writenbt, intbuffer]);
 }
-
 function writeLong(value) {
 	if (strnum.gt(value, '9223372036854775807') || strnum.lt(value, '-9223372036854775808')) throw new Error('out of range: ' + value);
 	var bnb = strnum.div(value, longuppershift, true); //get upper signed int
@@ -287,38 +264,32 @@ function writeLong(value) {
 	writeInt(Number(bnb));
 	writeInt(Number(bnl));
 }
-
 function writeFloat(value) {
 	var floatbuffer = new Buffer(4);
 	floatbuffer.writeFloatBE(value, 0);
 	writenbt = Buffer.concat([writenbt, floatbuffer]);
 }
-
 function writeDouble(value) {
 	var doublebuffer = new Buffer(8);
 	doublebuffer.writeDoubleBE(value, 0);
 	writenbt = Buffer.concat([writenbt, doublebuffer]);
 }
-
 function writeByte_Array(value) {
 	writeInt(value.length);
 	for (var i = 0; i < value.length; i++) writeByte(value[i]);
 }
-
 function writeString(value) {
 	writeShort(value.length);
 	var stringbuffer = new Buffer(value.length);
 	stringbuffer.write(value, 0);
 	writenbt = Buffer.concat([writenbt, stringbuffer]);
 }
-
 function writeList(value) {
 	var typeInfo = computeType(value.type);
 	writeByte(typeInfo.writeType);
 	writeInt(value.list.length);
 	for (var i = 0; i < value.list.length; i++) typeInfo.writeFunction(value.list[i]);
 }
-
 function writeCompound(value) {
 	var typeInfo;
 	for (var i in value) {
@@ -329,13 +300,12 @@ function writeCompound(value) {
 	}
 	writeByte(TAG_End);
 }
-
 function writeInt_Array(value) {
 	writeInt(value.length);
 	for (var i = 0; i < value.length; i++) writeInt(value[i]);
 }
-
-function computeType(typeName) { //sort of the opposite to extractType; returns the TAG id and the function necessary to write the tag
+//The opposite of extractType; returns the TAG id and the function necessary to write the tag
+function computeType(typeName) {
 	var writeType, writeFunction;
 	switch (typeName) {
 		case null: //should never be written

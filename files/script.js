@@ -1,4 +1,5 @@
 var images = { //stores the URL for all image assets
+	'null': '/images/TAG_End.png',
 	'TAG_Byte': '/images/TAG_Byte.png',
 	'TAG_Short': '/images/TAG_Short.png',
 	'TAG_Int': '/images/TAG_Int.png',
@@ -96,7 +97,7 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 								closeall();
 								$('div#loading').text('Rendering...');
 								setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
-									$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data, undefined, true))); //display the JSON
+									$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data, undefined, true).addClass('shown'))); //display the JSON
 									if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
 									$('div#nbt>ul>li>ul').show();
 									$('div#loading').remove();
@@ -112,9 +113,16 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 }
 
 function togglecontainer() { //triggered when clicking on a Byte_Array, Int_Array, List, or Compound's images - shows its children
-	var container = $(this).parent().children('ul');
-	if (container.is(':visible')) container.hide();
-	else container.show();
+	var li = $(this).parent();
+	var container = li.children('ul');
+	if (container.is(':visible')) {
+		container.hide();
+		li.removeClass('shown');
+	}
+	else {
+		container.show();
+		li.addClass('shown');
+	}
 }
 
 function subtype(type) { //gets the type of the inner element of an array
@@ -128,6 +136,12 @@ function subtype(type) { //gets the type of the inner element of an array
 function newcontainer() { //returns a new container that can have subtags added to it
 	return $('<ul>').addClass('nbtcontainer').hide();
 }
+function settypeattr(img, type) {
+	return img.attr('src', images[type]).attr('title', type);
+}
+function createtypeimg(type) {
+	return settypeattr($('<img>').addClass('type'), type);
+}
 function renderJSON(data, key, root) { //a recursive function to create an element that represents a tag
 	/*
 		key will be undefined if invoked by Byte_Array, Int_Array, or List; only relevant if displaying the child of a compound
@@ -138,7 +152,7 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		returns the li element
 	*/
 	var display = $('<li>'); //the main element
-	var typeimg = $('<img>').addClass('type').attr('src', images[data.type]).attr('title', data.type); //image that indicates type
+	var typeimg = createtypeimg(data.type); //image that indicates type
 	var valuespan = $('<span>'); //span that contains the value (with a possible key prefi)
 
 	var valuestring; //value of span text without the key
@@ -205,6 +219,7 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		valuespan.mouseover(showrename); //make the tag renamable
 	}
 	display.append(typeimg); //add type image
+	if (data.type == 'TAG_List') display.append(createtypeimg(data.value.type).addClass('subtype'));
 	if (valuetext) { //don't bother using valuespan unless it would have any text
 		valuespan.text(valuetext);
 		display.append(valuespan); //add type span
@@ -726,6 +741,7 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 				}
 			}
 		}
+		if (success) settypeattr(savetag.children('img.subtype'), tagtype);
 	}
 	else { //if dealing with a single member of a compound
 		if (savetag.attr('value') === undefined) { //if a Byte_Array or Int_Array
