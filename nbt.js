@@ -411,6 +411,14 @@ String.prototype.begins = function(substring) { //used to check if request URLs 
 	return this.substring(0, substring.length) == substring;
 }
 
+function subtype(type) { //gets the type of the inner element of an array
+	switch (type) {
+		case 'TAG_Byte_Array':
+			return 'TAG_Byte';
+		case 'TAG_Int_Array':
+			return 'TAG_Int';
+	}
+}
 //Like getPath in script.js except does the opposite thing; path array -> reference to tag
 //Note that it returns the object with 'value' and 'type' as keys
 function walkPath(path) {
@@ -418,10 +426,19 @@ function walkPath(path) {
 	for (var node = 0; node < path.length; node++) { //iterate over each step
 		switch (selected.type) {
 			case 'TAG_List':
-				selected = selected.value.list[path[node]];
+				selected = {
+					'type': selected.value.type,
+					'value': selected.value.list[path[node]]
+				};
 				break;
-			default: //TAG_Compound, TAG_Byte_Array, TAG_Int_Array
+			case 'TAG_Compound':
 				selected = selected.value[path[node]];
+				break;
+			default: //TAG_Byte_Array or TAG_Int_Array
+				selected = {
+					'type': subtype(selected.type),
+					'value': selected.value[path[node]]
+				};
 		}
 		if (!selected) throw new Error('Not a valid path: ' + String(path[node])); //catch errors more elegantly than by letting undefined go through
 	}
@@ -516,7 +533,7 @@ http.createServer(function(req, res) {
 								parent.value.list[tag] = data.value;
 								break;
 							case 'TAG_Compound':
-								parent[tag].value = data.value;
+								parent.value[tag].value = data.value;
 								break;
 							default: //TAG_Byte_Array or TAG_Int_Array
 								parent.value[tag] = data.value;

@@ -134,11 +134,11 @@ button#namesave.blur {
   border:2px solid #bdc3c7;
   border-left:none;
 }
-.btn-success {
+button.btn-success {
   color:#fff !important;
   background-color:#2ecc71 !important;
 }
-.btn-danger {
+button.btn-danger {
   color:#fff !important;
   background-color:#e74c3c !important;
 }

@@ -116,6 +116,17 @@ function togglecontainer() { //triggered when clicking on a Byte_Array, Int_Arra
 	else container.show();
 }
 
+function subtype(type) { //gets the type of the inner element of an array
+	switch (type) {
+		case 'TAG_Byte_Array':
+			return 'TAG_Byte';
+		case 'TAG_Int_Array':
+			return 'TAG_Int';
+	}
+}
+function newcontainer() { //returns a new container that can have subtags added to it
+	return $('<ul>').addClass('nbtcontainer').hide();
+}
 function renderJSON(data, key, root) { //a recursive function to create an element that represents a tag
 	/*
 		key will be undefined if invoked by Byte_Array, Int_Array, or List; only relevant if displaying the child of a compound
@@ -125,70 +136,84 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		root will only be true for the root tag
 		returns the li element
 	*/
-	var display = $('<li>');
-	switch (data.type) {
-		case 'TAG_Byte':
-			if (key) return display.attr('key', key).attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Byte).attr('title', 'TAG_Byte')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce));
-			else return display.attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Byte).attr('title', 'TAG_Byte')).append($('<span>').text(String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete));
-		case 'TAG_Short':
-			if (key) return display.attr('key', key).attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Short).attr('title', 'TAG_Short')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce));
-			else return display.attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Short).attr('title', 'TAG_Short')).append($('<span>').text(String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete));
-		case 'TAG_Int':
-			if (key) return display.attr('key', key).attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Int).attr('title', 'TAG_Int')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce));
-			else return display.attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Int).attr('title', 'TAG_Int')).append($('<span>').text(String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete));
-		case 'TAG_Long':
-			if (key) return display.attr('key', key).attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Long).attr('title', 'TAG_Long')).append($('<span>').text(key + ': ' + data.value).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce));
-			else return display.attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Long).attr('title', 'TAG_Long')).append($('<span>').text(data.value).mouseover(removeicons).mouseover(showedit).mouseover(showdelete));
-		case 'TAG_Float':
-			if (key) return display.attr('key', key).attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Float).attr('title', 'TAG_Float')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce));
-			else return display.attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Float).attr('title', 'TAG_Float')).append($('<span>').text(String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete));
-		case 'TAG_Double':
-			if (key) return display.attr('key', key).attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Double).attr('title', 'TAG_Double')).append($('<span>').text(key + ': ' + String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce));
-			else return display.attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_Double).attr('title', 'TAG_Double')).append($('<span>').text(String(data.value)).mouseover(removeicons).mouseover(showedit).mouseover(showdelete));
-		case 'TAG_Byte_Array':
-			var container = $('<ul>').addClass('nbtcontainer').hide();
-			for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Byte', value: data.value[i]}));
-			addudicons(container);
-			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', images.TAG_Byte_Array).attr('title', 'TAG_Byte_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce).mouseover(showadd)).append(container);
-			else return display.append($('<img>').addClass('type').attr('src', images.TAG_Byte_Array).attr('title', 'TAG_Byte_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showadd)).append(container);
-		case 'TAG_String':
-			if (key) return display.attr('key', key).attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_String).attr('title', 'TAG_String')).append($('<span>').text(key + ': ' + '"' + data.value + '"').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce));
-			else return display.attr('value', data.value).append($('<img>').addClass('type').attr('src', images.TAG_String).attr('title', 'TAG_String')).append($('<span>').text('"' + data.value + '"').mouseover(removeicons).mouseover(showedit).mouseover(showdelete));
-		case 'TAG_List':
-			var container = $('<ul>').addClass('nbtcontainer').hide();
-			for (var i = 0; i < data.value.list.length; i++) container.append(renderJSON({type: data.value.type, value: data.value.list[i]}));
-			addudicons(container);
-			if (key) {
-				display.attr('key', key).attr('type', String(data.value.type)).append($('<img>').addClass('type').attr('src', images.TAG_List).attr('title', 'TAG_List').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showdelete).mouseover(showrename).mouseover(showadd)).append(container);
-				if (coerceto[String(data.value.type)]) display.children('span').mouseover(showcoerce); //not all lists are coercible (e.g. TAG_Compound)
-				return display;
-			}
-			else {
-				display.attr('type', String(data.value.type)).append($('<img>').addClass('type').attr('src', images.TAG_List).attr('title', 'TAG_List').click(togglecontainer).mouseover(removeicons).mouseover(showdelete).mouseover(showadd)).append(container);
-				if (coerceto[String(data.value.type)]) display.children('img.type').mouseover(showcoerce); //not all lists are coercible (e.g. TAG_Compound)
-				return display;
-			}
-		case 'TAG_Compound':
-			var container = $('<ul>').addClass('nbtcontainer').hide();
-			for (var i in data.value) container.append(renderJSON(data.value[i], i));
-			sortkeys(container);
-			var image = $('<img>').addClass('type').attr('src', images.TAG_Compound).attr('title', 'TAG_Compound').click(togglecontainer);
-			if (key) return display.attr('key', key).append(image).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showdelete).mouseover(showrename).mouseover(showadd)).append(container);
-			else {
-				image.mouseover(removeicons);
-				if (!root) image.mouseover(showdelete);
-				image.mouseover(showadd);
-				return display.append(image).append(container);
-			}
-		case 'TAG_Int_Array':
-			var container = $('<ul>').addClass('nbtcontainer').hide();
-			for (var i = 0; i < data.value.length; i++) container.append(renderJSON({type: 'TAG_Int', value: data.value[i]}));
-			addudicons(container);
-			if (key) return display.attr('key', key).append($('<img>').addClass('type').attr('src', images.TAG_Int_Array).attr('title', 'TAG_Int_Array').click(togglecontainer)).append($('<span>').text(key + ':').mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showrename).mouseover(showcoerce).mouseover(showadd)).append(container);
-			else return display.append($('<img>').addClass('type').attr('src', images.TAG_Int_Array).attr('title', 'TAG_Int_Array').click(togglecontainer).mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showadd)).append(container);
-		default: //should never trigger, but if it did, it would mess up everything, so better to just quit
-			throw new Error('No such tag: ' + data.type);
+	var display = $('<li>'); //the main element
+	var typeimg = $('<img>').addClass('type').attr('src', images[data.type]).attr('title', data.type); //image that indicates type
+	var valuespan = $('<span>'); //span that contains the value (with a possible key prefi)
+
+	var valuestring; //value of span text without the key
+	if (typeof(data.value) != 'object') { //for primitive types, calculate the display value
+		valuestring = String(data.value);
+		display.attr('value', data.value);
 	}
+	else valuestring = ''; //for complicated types (with subtags), don't display a value
+
+	var mousetarget; //target for mouseover handlers (only applicable when there are subtags (so valuestring == ''))
+	if (key === undefined) mousetarget = typeimg; //if no key, then valuespan will be empty, so use the image
+	else mousetarget = valuespan; //if a key, then target the span
+
+	var container; //will contain subtags if there are any
+
+	if (['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double'].indexOf(data.type) != -1) { //numerical types should be treated the same
+		valuespan.mouseover(removeicons).mouseover(showedit).mouseover(showdelete);
+		if (key !== undefined) valuespan.mouseover(showcoerce);
+	}
+	else if (['TAG_Byte_Array', 'TAG_Int_Array'].indexOf(data.type) != -1) {
+		container = newcontainer();
+		for (var i = 0; i < data.value.length; i++) { //add each of the subtags
+			container.append(renderJSON({
+				'type': subtype(data.type),
+				'value': data.value[i]
+			}));
+		}
+		addudicons(container);
+		mousetarget.mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showadd);
+		if (key !== undefined) mousetarget.mouseover(showcoerce);
+	}
+	else if (data.type == 'TAG_String') {
+		valuestring = '"' + valuestring + '"'; //add quotes around the value
+		valuespan.mouseover(removeicons).mouseover(showedit).mouseover(showdelete);
+		if (key !== undefined) valuespan.mouseover(showcoerce);
+	}
+	else if (data.type == 'TAG_List') { //very similar to TAG_Byte_Array and TAG_Int_Array except getting type information is different and coercibility is calculated differently
+		display.attr('type', String(data.value.type)); //store the type information in the tag
+		container = newcontainer();
+		for (var i = 0; i < data.value.list.length; i++) { //add each of the subtags
+			container.append(renderJSON({
+				'type': data.value.type,
+				'value': data.value.list[i]
+			}));
+		}
+		addudicons(container);
+		mousetarget.mouseover(removeicons).mouseover(showdelete).mouseover(showadd);
+		if (coerceto[String(data.value.type)]) mousetarget.mouseover(showcoerce); //not all lists are coercible (e.g. TAG_Compound)
+	}
+	else if (data.type == 'TAG_Compound') {
+		container = newcontainer();
+		for (var i in data.value) container.append(renderJSON(data.value[i], i)); //add each of the subtags
+		sortkeys(container); //order the tags alphabetically
+		mousetarget.mouseover(removeicons);
+		if (!root) mousetarget.mouseover(showdelete);
+		mousetarget.mouseover(showadd);
+	}
+	else throw new Error('No such tag: ' + data.type); //should never trigger, but if it did, it would mess up everything, so better to just quit
+
+	var valuetext; //the text to assign to valuespan
+	if (key === undefined) valuetext = valuestring;
+	else { //if there is a key
+		display.attr('key', key); //store the key information in the tag
+		valuetext = key + ': ' + valuestring; //add key prefix
+		valuespan.mouseover(showrename); //make the tag renamable
+	}
+	display.append(typeimg); //add type image
+	if (valuetext) { //don't bother using valuespan unless it would have any text
+		valuespan.text(valuetext);
+		display.append(valuespan); //add type span
+	}
+	if (container) { //if there are subtags
+		typeimg.click(togglecontainer); //make clicking the image show/hide subtags
+		display.append(container);
+	}
+	return display; //return the new element
 }
 function sortkeys(container) { //does an insertion sort on the elements in a compound by key
 	var elements = container.children(); //get the tags to sort
@@ -308,7 +333,7 @@ function edit() { //open the editor
 			else $('div#editor h3.panel-title').text('Editing TAG_Double');
 			break;
 		case images.TAG_Byte_Array: //Byte_Array and Int_Array are weird because they have children who determine their value
-			var elements = parent.children('ul').children(), values;
+			var elements = parent.children('ul').children(), values = [];
 			for (var i = 0; i < elements.length; i++) values[i] = elements.eq(i).attr('value'); //create an array of all the children
 			editororig = values.join('\n'); //editor should display each child on its own line
 			editor.setValue(editororig);
@@ -322,7 +347,7 @@ function edit() { //open the editor
 			else $('div#editor h3.panel-title').text('Editing TAG_Double');
 			break;
 		case images.TAG_Int_Array: //see case images.TAG_Byte_Array
-			var elements = parent.children('ul').children(), values;
+			var elements = parent.children('ul').children(), values = [];
 			for (var i = 0; i < elements.length; i++) values[i] = elements.eq(i).attr('value');
 			editororig = values.join('\n');
 			editor.setValue(editororig);
@@ -566,7 +591,7 @@ function createtag(type, key) { //calls renderJSON to generate the tag and adds 
 		'type': type,
 		'value': defaults[type]
 	}, key));
-	if (key) sortkeys(container);
+	if (key !== undefined) sortkeys(container);
 	if (savetag.children('img.type').attr('src') != images.TAG_Compound) addudicons(savetag.children('ul'));
 	$.ajax({ //see save()
 		'url': '/editnbt/add',
