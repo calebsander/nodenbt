@@ -1,3 +1,16 @@
+//Strings for tag types are stored in variables of the same name so arbitrary string literals are not used as much
+var TAG_Byte = 'TAG_Byte';
+var TAG_Short = 'TAG_Short';
+var TAG_Int = 'TAG_Int';
+var TAG_Long = 'TAG_Long';
+var TAG_Float = 'TAG_Float';
+var TAG_Double = 'TAG_Double';
+var TAG_Byte_Array = 'TAG_Byte_Array';
+var TAG_String = 'TAG_String';
+var TAG_List = 'TAG_List';
+var TAG_Compound = 'TAG_Compound';
+var TAG_Int_Array = 'TAG_Int_Array';
+
 var images = { //stores the URL for all image assets
 	'null': '/images/TAG_End.png',
 	'TAG_Byte': '/images/TAG_Byte.png',
@@ -127,16 +140,16 @@ function togglecontainer() { //triggered when clicking on a Byte_Array, Int_Arra
 
 function subtype(type) { //gets the type of the inner element of an array
 	switch (type) {
-		case 'TAG_Byte_Array':
-			return 'TAG_Byte';
-		case 'TAG_Int_Array':
-			return 'TAG_Int';
+		case TAG_Byte_Array:
+			return TAG_Byte;
+		case TAG_Int_Array:
+			return TAG_Int;
 	}
 }
 function newcontainer() { //returns a new container that can have subtags added to it
 	return $('<ul>').addClass('nbtcontainer').hide();
 }
-function settypeattr(img, type) {
+function settypeattr(img, type) { //changes
 	return img.attr('src', images[type]).attr('title', type);
 }
 function createtypeimg(type) {
@@ -168,11 +181,11 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 
 	var container; //will contain subtags if there are any
 
-	if (['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double'].indexOf(data.type) != -1) { //numerical types should be treated the same
+	if ([TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double].indexOf(data.type) != -1) { //numerical types should be treated the same
 		valuespan.mouseover(removeicons).mouseover(showedit).mouseover(showdelete);
 		if (key !== undefined) valuespan.mouseover(showcoerce);
 	}
-	else if (['TAG_Byte_Array', 'TAG_Int_Array'].indexOf(data.type) != -1) {
+	else if ([TAG_Byte_Array, TAG_Int_Array].indexOf(data.type) != -1) {
 		container = newcontainer();
 		for (var i = 0; i < data.value.length; i++) { //add each of the subtags
 			container.append(renderJSON({
@@ -184,12 +197,12 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		mousetarget.mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showadd);
 		if (key !== undefined) mousetarget.mouseover(showcoerce);
 	}
-	else if (data.type == 'TAG_String') {
+	else if (data.type == TAG_String) {
 		valuestring = '"' + valuestring + '"'; //add quotes around the value
 		valuespan.mouseover(removeicons).mouseover(showedit).mouseover(showdelete);
 		if (key !== undefined) valuespan.mouseover(showcoerce);
 	}
-	else if (data.type == 'TAG_List') { //very similar to TAG_Byte_Array and TAG_Int_Array except getting type information is different and coercibility is calculated differently
+	else if (data.type == TAG_List) { //very similar to TAG_Byte_Array and TAG_Int_Array except getting type information is different and coercibility is calculated differently
 		display.attr('type', String(data.value.type)); //store the type information in the tag
 		container = newcontainer();
 		for (var i = 0; i < data.value.list.length; i++) { //add each of the subtags
@@ -201,7 +214,7 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		addudicons(container);
 		mousetarget.mouseover(removeicons).mouseover(showdelete).mouseover(showadd).mouseover(showcoerce);
 	}
-	else if (data.type == 'TAG_Compound') {
+	else if (data.type == TAG_Compound) {
 		container = newcontainer();
 		for (var i in data.value) container.append(renderJSON(data.value[i], i)); //add each of the subtags
 		sortkeys(container); //order the tags alphabetically
@@ -219,7 +232,7 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		valuespan.mouseover(showrename); //make the tag renamable
 	}
 	display.append(typeimg); //add type image
-	if (data.type == 'TAG_List') display.append(createtypeimg(data.value.type).addClass('subtype'));
+	if (data.type == TAG_List) display.append(createtypeimg(data.value.type).addClass('subtype'));
 	if (valuetext) { //don't bother using valuespan unless it would have any text
 		valuespan.text(valuetext);
 		display.append(valuespan); //add type span
@@ -265,16 +278,16 @@ function removeicons() { //triggered whenever mousing over an element - removes 
 
 var coerceto = { //stores possible new tag types for conversion (not all may actually work)
 	//null is a special case because it should only be used on lists of length 0 without a specified type
-	'null': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_Byte_Array', 'TAG_String', 'TAG_List', 'TAG_Compound', 'TAG_Int_Array'],
-	'TAG_Byte': ['TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_String'],
-	'TAG_Short': ['TAG_Byte', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_String'],
-	'TAG_Int': ['TAG_Byte', 'TAG_Short', 'TAG_Long', 'TAG_Float', 'TAG_Double', 'TAG_String'],
-	'TAG_Long': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Float', 'TAG_Double', 'TAG_String'],
-	'TAG_Float': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Double', 'TAG_String'],
-	'TAG_Double': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_String'],
-	'TAG_String': ['TAG_Byte', 'TAG_Short', 'TAG_Int', 'TAG_Long', 'TAG_Float', 'TAG_Double'],
-	'TAG_Byte_Array': ['TAG_Int_Array'],
-	'TAG_Int_Array': ['TAG_Byte_Array']
+	'null': [TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double, TAG_Byte_Array, TAG_String, TAG_List, TAG_Compound, TAG_Int_Array],
+	'TAG_Byte': [TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double, TAG_String],
+	'TAG_Short': [TAG_Byte, TAG_Int, TAG_Long, TAG_Float, TAG_Double, TAG_String],
+	'TAG_Int': [TAG_Byte, TAG_Short, TAG_Long, TAG_Float, TAG_Double, TAG_String],
+	'TAG_Long': [TAG_Byte, TAG_Short, TAG_Int, TAG_Float, TAG_Double, TAG_String],
+	'TAG_Float': [TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Double, TAG_String],
+	'TAG_Double': [TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_String],
+	'TAG_String': [TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double],
+	'TAG_Byte_Array': [TAG_Int_Array],
+	'TAG_Int_Array': [TAG_Byte_Array]
 };
 function settypeselect(type) { //used to set the possible values of the tag type for adding a new tag or coercing an existing one
 	var typeselect = $('select#typeinput'); //prefetch the typeselect
@@ -441,8 +454,8 @@ function save() { //save the editted tag
 		var valueworks = valuecheck(savetype, editorvalue); //check the value
 		if (valueworks.success) { //if it worked
 			if (savetype == images.TAG_Byte_Array || savetype == images.TAG_Int_Array) { //if it is a Byte_Array or Int_Array
-				if (savetype == images.TAG_Byte_Array) nbttype = 'TAG_Byte';
-				else nbttype = 'TAG_Int';
+				if (savetype == images.TAG_Byte_Array) nbttype = TAG_Byte;
+				else nbttype = TAG_Int;
 				var container = savetag.children('ul');
 				container.children().remove(); //remove old children
 				//iterate over every element and append the li to the container
@@ -696,9 +709,10 @@ function coerce() { //open the type selection interface for coercing a tag
 function savecoerce() { //checks to see if the coercion is valid, saves it if it is
 	if (savetag.children('img.type').attr('src') == images.TAG_List) { //if in a list, each value must be checked individually
 		var success = false;
-		if (tagtype == 'TAG_List' || tagtype == 'TAG_Compound') { //if going to List or Compound (from End), it's allowed
+		if (tagtype == TAG_List || tagtype == TAG_Compound) { //if going to List or Compound (from End), it's allowed
 			savetag.attr('type', tagtype);
 			success = true;
+			coerceimg.detach();
 		}
 		else { //otherwise, a type check is needed
 			var valueworks, elements = savetag.children('ul').children(); //success is coercibility, valueworks is the result of valuecheck(), elements is the array of children
@@ -726,7 +740,7 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 			if (success) { //if it worked
 				savetag.attr('type', tagtype); //change the type
 				var src = images[tagtype]; //get url for the children's type icons
-				if (tagtype == 'TAG_Byte_Array') var subsrc = images.TAG_Byte; //get url for the subchildren (only matters if coercing a Byte_Array or Int_Array)
+				if (tagtype == TAG_Byte_Array) var subsrc = images.TAG_Byte; //get url for the subchildren (only matters if coercing a Byte_Array or Int_Array)
 				else var subsrc = images.TAG_Int;
 				for (i = 0; i < elements.length; i++) { //go through the elements
 					if (elements.eq(i).attr('value')) { //if not a Byte_Array or Int_Array
@@ -746,7 +760,7 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 	else { //if dealing with a single member of a compound
 		if (savetag.attr('value') === undefined) { //if a Byte_Array or Int_Array
 			var src = images[tagtype]; //get new image src
-			if (tagtype == 'TAG_Byte_Array') var subsrc = images.TAG_Byte; //get src for children
+			if (tagtype == TAG_Byte_Array) var subsrc = images.TAG_Byte; //get src for children
 			else var subsrc = images.TAG_Int;
 			var elements = savetag.children('ul').children(), items = []; //elements is the list of children, items is the array of their values
 			for (var i = 0; i < elements.length; i++) items[i] = elements.eq(i).attr('value'); //form the list of values
