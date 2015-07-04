@@ -1,4 +1,5 @@
 //Strings for tag types are stored in variables of the same name so arbitrary string literals are not used as much
+var TAG_End = 'TAG_End';
 var TAG_Byte = 'TAG_Byte';
 var TAG_Short = 'TAG_Short';
 var TAG_Int = 'TAG_Int';
@@ -149,10 +150,10 @@ function subtype(type) { //gets the type of the inner element of an array
 function newcontainer() { //returns a new container that can have subtags added to it
 	return $('<ul>').addClass('nbtcontainer').hide();
 }
-function settypeattr(img, type) { //changes
-	return img.attr('src', images[type]).attr('title', type);
+function settypeattr(img, type) { //changes the src and title attributes of an img.type element to match a certain type
+	return img.attr('src', images[type]).attr('title', type || TAG_End);
 }
-function createtypeimg(type) {
+function createtypeimg(type) { //create a new type image of a certain type
 	return settypeattr($('<img>').addClass('type'), type);
 }
 function renderJSON(data, key, root) { //a recursive function to create an element that represents a tag
@@ -177,13 +178,17 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 
 	var mousetarget; //target for mouseover handlers (only applicable when there are subtags (so valuestring == ''))
 	if (key === undefined) mousetarget = typeimg; //if no key, then valuespan will be empty, so use the image
-	else mousetarget = valuespan; //if a key, then target the span
+	else {
+		mousetarget = valuespan; //if a key, then target the span
+		valuespan.mouseover(showrename); //make the tag renamable
+	}
 
 	var container; //will contain subtags if there are any
 
 	if ([TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double].indexOf(data.type) != -1) { //numerical types should be treated the same
-		valuespan.mouseover(removeicons).mouseover(showedit).mouseover(showdelete);
+		valuespan.mouseover(removeicons);
 		if (key !== undefined) valuespan.mouseover(showcoerce);
+		valuespan.mouseover(showdelete).mouseover(showedit);
 	}
 	else if ([TAG_Byte_Array, TAG_Int_Array].indexOf(data.type) != -1) {
 		container = newcontainer();
@@ -194,13 +199,15 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 			}));
 		}
 		addudicons(container);
-		mousetarget.mouseover(removeicons).mouseover(showedit).mouseover(showdelete).mouseover(showadd);
+		mousetarget.mouseover(removeicons)
 		if (key !== undefined) mousetarget.mouseover(showcoerce);
+		valuespan.mouseover(showadd).mouseover(showdelete).mouseover(showedit);
 	}
 	else if (data.type == TAG_String) {
 		valuestring = '"' + valuestring + '"'; //add quotes around the value
-		valuespan.mouseover(removeicons).mouseover(showedit).mouseover(showdelete);
+		valuespan.mouseover(removeicons);
 		if (key !== undefined) valuespan.mouseover(showcoerce);
+		valuespan.mouseover(showdelete).mouseover(showedit);
 	}
 	else if (data.type == TAG_List) { //very similar to TAG_Byte_Array and TAG_Int_Array except getting type information is different and coercibility is calculated differently
 		display.attr('type', String(data.value.type)); //store the type information in the tag
@@ -212,15 +219,14 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 			}));
 		}
 		addudicons(container);
-		mousetarget.mouseover(removeicons).mouseover(showdelete).mouseover(showadd).mouseover(showcoerce);
+		mousetarget.mouseover(removeicons).mouseover(showcoerce).mouseover(showadd).mouseover(showdelete);
 	}
 	else if (data.type == TAG_Compound) {
 		container = newcontainer();
 		for (var i in data.value) container.append(renderJSON(data.value[i], i)); //add each of the subtags
 		sortkeys(container); //order the tags alphabetically
-		mousetarget.mouseover(removeicons);
+		mousetarget.mouseover(removeicons).mouseover(showadd);
 		if (!root) mousetarget.mouseover(showdelete);
-		mousetarget.mouseover(showadd);
 	}
 	else throw new Error('No such tag: ' + data.type); //should never trigger, but if it did, it would mess up everything, so better to just quit
 
@@ -229,7 +235,6 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 	else { //if there is a key
 		display.attr('key', key); //store the key information in the tag
 		valuetext = key + ': ' + valuestring; //add key prefix
-		valuespan.mouseover(showrename); //make the tag renamable
 	}
 	display.append(typeimg); //add type image
 	if (data.type == TAG_List) display.append(createtypeimg(data.value.type).addClass('subtype'));
@@ -267,13 +272,13 @@ var savetag; //stores the current element being editted for editting function th
 var newtag; //whether or not a new tag is being added - used to change what happens when entering a new tag type or name
 
 function removeicons() { //triggered whenever mousing over an element - removes all the editting function icons if they exist on another element
-	if (!$(this).parent().children('img.edit').is(editimg) && !$(this).children('img.edit').is(editimg)) editimg.detach();
-	if (!$(this).parent().children('img.delete').is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) deleteimg.detach();
-	if (!$(this).parent().children('img.rename').is(renameimg) && !$(this).children('img.rename').is(renameimg)) renameimg.detach();
-	if (!$(this).parent().children('img.add').is(addimg) && !$(this).children('img.add').is(addimg)) addimg.detach();
-	if (!$(this).parent().children('img.coerce').is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) coerceimg.detach();
-	if (!$(this).parent().children('img.up').is(upimg) && !$(this).children('img.up').is(upimg)) upimg.detach();
-	if (!$(this).parent().children('img.down').is(downimg) && !$(this).children('img.down').is(downimg)) downimg.detach();
+	if (!$(this).parent().children('img.edit').is(editimg)) editimg.detach();
+	if (!$(this).parent().children('img.delete').is(deleteimg)) deleteimg.detach();
+	if (!$(this).parent().children('img.rename').is(renameimg)) renameimg.detach();
+	if (!$(this).parent().children('img.add').is(addimg)) addimg.detach();
+	if (!$(this).parent().children('img.coerce').is(coerceimg)) coerceimg.detach();
+	if (!$(this).parent().children('img.up').is(upimg)) upimg.detach();
+	if (!$(this).parent().children('img.down').is(downimg)) downimg.detach();
 }
 
 var coerceto = { //stores possible new tag types for conversion (not all may actually work)
@@ -320,7 +325,6 @@ var editor, editororig; //editor is the ace editor variable, editororig is the o
 function edit() { //open the editor
 	closeall(); //remove all editting windows
 	var parent = $(this).parent(); //parent should be the li element
-	if (parent.is('span')) parent = parent.parent(); //if targetting an element in a List of type Byte_Array or Int_Array, parent will be correct, otherwise parent is incorrectly the span element
 	savetag = parent;
 	switch (parent.children('img.type').attr('src')) { //different types must be handled differently
 		//generally, store the original value and set the editor text to it, then set the title to say what's being editted
@@ -390,10 +394,7 @@ function edit() { //open the editor
 }
 var editimg = $('<img>').addClass('edit').attr('src', images.edit).attr('title', 'Edit value'); //image element with the edit icon
 function showedit() { //triggered when mousing over an edittable element - shows the edit icon
-	if (!$(this).parent().children('img.edit').is(editimg) && !$(this).children('img.edit').is(editimg)) { //if this isn't already displaying the edit icon
-		if ($(this).is('img')) $(this).after(editimg); //for List elements with children, there is no span, so the mouseover is on the img element; add it after the image
-		else $(this).append(editimg); //otherwise, append it inside the span
-	}
+	if (!$(this).parent().children('img.edit').is(editimg)) $(this).after(editimg); //if this isn't already displaying the edit icon, display it
 }
 function valuecheck(type, value) { //used to check if the provided value (as a string) is valid for the data type
 	var origvalue = value;
@@ -494,7 +495,6 @@ function closeeditor() { //close the editor
 
 function deleter() { //delete the tag where the delete icon was clicked
 	var parent = $(this).parent(); //see edit()
-	if (parent.is('span')) parent = parent.parent();
 	$.ajax({ //see save()
 		'url': '/editnbt/delete',
 		'type': 'POST',
@@ -512,17 +512,13 @@ function deleter() { //delete the tag where the delete icon was clicked
 }
 var deleteimg = $('<img>').addClass('delete').attr('src', images['delete']).attr('title', 'Delete tag');
 function showdelete() { //see showedit()
-	if (!$(this).parent().children('img.delete').is(deleteimg) && !$(this).children('img.delete').is(deleteimg)) {
-		if ($(this).is('img')) $(this).after(deleteimg);
-		else $(this).append(deleteimg);
-	}
+	if (!$(this).parent().children('img.delete').is(deleteimg)) $(this).after(deleteimg);
 }
 
 var renameorig; //the original tag name to compare to
 function rename() { //open the rename panel
 	closeall(); //don't want to be editting anything else at the same time
 	var parent = $(this).parent(); //see edit()
-	if (parent.is('span')) parent = parent.parent();
 	savetag = parent; //see edit()
 	newtag = false;
 	renameorig = parent.attr('key'); //store originalname
@@ -533,10 +529,7 @@ function rename() { //open the rename panel
 }
 var renameimg = $('<img>').addClass('rename').attr('src', images.rename).attr('title', 'Rename tag');
 function showrename() { //see showedit()
-	if (!$(this).parent().children('img.rename').is(renameimg) && !$(this).children('img.rename').is(renameimg)) {
-		if ($(this).is('img')) $(this).after(renameimg);
-		else $(this).append(renameimg);
-	}
+	if (!$(this).parent().children('img.rename').is(renameimg)) $(this).after(renameimg);
 }
 function checkname() { //checks the value of the nameinput to see if it conflicts
 	var value = $(this).val(); //get value
@@ -642,7 +635,6 @@ function createtag(type, key) { //calls renderJSON to generate the tag and adds 
 function add() { //opens the type selection interface for adding a new tag to a compound, or just adds a new tag to a TAG_List, TAG_Byte_Array, or TAG_Int_Array
 	closeall(); //nothing else should be editted at the same time
 	var parent = $(this).parent(); //see edit()
-	if (parent.is('span')) parent = parent.parent();
 	savetag = parent;
 	var parentkey = parent.attr('key');
 	if (parent.children('img.type').attr('src') == images.TAG_Compound) { //if adding an element to a compound
@@ -670,10 +662,7 @@ function add() { //opens the type selection interface for adding a new tag to a 
 }
 var addimg = $('<img>').addClass('add').attr('src', images.add).attr('title', 'Add tag');
 function showadd() { //see showedit()
-	if (!$(this).parent().children('img.add').is(addimg) && !$(this).children('img.add').is(addimg)) {
-		if ($(this).is('img')) $(this).after(addimg);
-		else $(this).append(addimg);
-	}
+	if (!$(this).parent().children('img.add').is(addimg)) $(this).after(addimg);
 }
 function compoundsave() { //after name has been entered, add a child to the compound using it and the previously selected type
 	if ($('button#namesave').hasClass('btn-success')) { //if name is invalid, do nothing
@@ -688,7 +677,6 @@ function closetype() { //close the type selection - quick and easy
 function coerce() { //open the type selection interface for coercing a tag
 	closeall(); //shouldn't be editing anything else simultaneously
 	var parent = $(this).parent(); //see edit()
-	if (parent.is('span')) parent = parent.parent();
 	savetag = parent;
 	newtag = false; //not trying to add a tag, tells save tag button that it should attempt to change the tag type
 	if (parent.attr('type')) var type = parent.attr('type'); //if coercing a List, simply read the type from its stored attribute
@@ -802,12 +790,9 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 }
 var coerceimg = $('<img>').addClass('coerce').attr('src', images.coerce).attr('title', 'Convert type');
 function showcoerce() { //see showedit()
-	if (!$(this).parent().children('img.coerce').is(coerceimg) && !$(this).children('img.coerce').is(coerceimg)) {
+	if (!$(this).parent().children('img.coerce').is(coerceimg)) {
 		var type = $(this).parent().attr('type'); //will contain the type for a TAG_List, otherwise it will be undefined
-		if (type === undefined || coerceto[type]) { //not all lists are coercible (e.g. TAG_Compound)
-			if ($(this).is('img')) $(this).after(coerceimg);
-			else $(this).append(coerceimg);
-		}
+		if (type === undefined || coerceto[type]) $(this).after(coerceimg); //not all lists are coercible (e.g. TAG_Compound)
 	}
 }
 
@@ -824,7 +809,6 @@ function addudicons(list) { //add ordering icons to a Byte_Array, List, or Int_A
 }
 function up() { //move an element in a list up
 	var parent = $(this).parent(); //see edit()
-	if (parent.is('span')) parent = parent.parent();
 	$.ajax({ //see save()
 		'url': '/editnbt/up',
 		'type': 'POST',
@@ -844,14 +828,10 @@ function up() { //move an element in a list up
 }
 var upimg = $('<img>').addClass('up').attr('src', images.up).attr('title', 'Move up');
 function showup() { //see showedit()
-	if (!$(this).parent().children('img.up').is(upimg) && !$(this).children('img.up').is(upimg)) {
-		if ($(this).is('img')) $(this).after(upimg);
-		else $(this).append(upimg);
-	}
+	if (!$(this).parent().children('img.up').is(upimg)) $(this).after(upimg);
 }
 function down() { //move an element in a list down; see up()
 	var parent = $(this).parent();
-	if (parent.is('span')) parent = parent.parent();
 	$.ajax({ //see save()
 		'url': '/editnbt/down',
 		'type': 'POST',
@@ -871,10 +851,7 @@ function down() { //move an element in a list down; see up()
 }
 var downimg = $('<img>').addClass('down').attr('src', images.down).attr('title', 'Move down');
 function showdown() { //see showedit()
-	if (!$(this).parent().children('img.down').is(downimg) && !$(this).children('img.down').is(downimg)) {
-		if ($(this).is('img')) $(this).after(downimg);
-		else $(this).append(downimg);
-	}
+	if (!$(this).parent().children('img.down').is(downimg)) $(this).after(downimg);
 }
 
 function closeall() { //close all editing windows
