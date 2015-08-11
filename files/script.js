@@ -191,17 +191,10 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		valuespan.mouseover(showdelete).mouseover(showedit);
 	}
 	else if ([TAG_Byte_Array, TAG_Int_Array].indexOf(data.type) != -1) {
-		container = newcontainer();
-		for (var i = 0; i < data.value.length; i++) { //add each of the subtags
-			container.append(renderJSON({
-				'type': subtype(data.type),
-				'value': data.value[i]
-			}));
-		}
-		addudicons(container);
+		display.attr('value', String(data.value));
 		mousetarget.mouseover(removeicons)
 		if (key !== undefined) mousetarget.mouseover(showcoerce);
-		valuespan.mouseover(showadd).mouseover(showdelete).mouseover(showedit);
+		valuespan.mouseover(showdelete).mouseover(showedit);
 	}
 	else if (data.type == TAG_String) {
 		valuestring = '"' + valuestring + '"'; //add quotes around the value
@@ -364,10 +357,8 @@ function edit() { //open the editor
 			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 			else $('div#editor h3.panel-title').text('Editing TAG_Double');
 			break;
-		case images.TAG_Byte_Array: //Byte_Array and Int_Array are weird because they have children who determine their value
-			var elements = parent.children('ul').children(), values = [];
-			for (var i = 0; i < elements.length; i++) values[i] = elements.eq(i).attr('value'); //create an array of all the children
-			editororig = values.join('\n'); //editor should display each child on its own line
+		case images.TAG_Byte_Array: //Byte_Array and Int_Array are weird because their value attribute is a sort of array
+			editororig = parent.attr('value').replace(/,/g, '\n'); //editor should display each child on its own line
 			editor.setValue(editororig);
 			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 			else $('div#editor h3.panel-title').text('Editing TAG_Byte_Array');
@@ -379,9 +370,7 @@ function edit() { //open the editor
 			else $('div#editor h3.panel-title').text('Editing TAG_Double');
 			break;
 		case images.TAG_Int_Array: //see case images.TAG_Byte_Array
-			var elements = parent.children('ul').children(), values = [];
-			for (var i = 0; i < elements.length; i++) values[i] = elements.eq(i).attr('value');
-			editororig = values.join('\n');
+			editororig = parent.attr('value').replace(/,/g, '\n');
 			editor.setValue(editororig);
 			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
 			else $('div#editor h3.panel-title').text('Editing TAG_Int_Array');
@@ -454,16 +443,8 @@ function save() { //save the editted tag
 		var editorvalue = editor.getValue();
 		var valueworks = valuecheck(savetype, editorvalue); //check the value
 		if (valueworks.success) { //if it worked
-			if (savetype == images.TAG_Byte_Array || savetype == images.TAG_Int_Array) { //if it is a Byte_Array or Int_Array
-				if (savetype == images.TAG_Byte_Array) nbttype = TAG_Byte;
-				else nbttype = TAG_Int;
-				var container = savetag.children('ul');
-				container.children().remove(); //remove old children
-				//iterate over every element and append the li to the container
-				for (var i = 0; i < valueworks.value.length; i++) container.append(renderJSON({type: nbttype, value: valueworks.value[i] = Number(valueworks.value[i])}, undefined, true));
-				addudicons(container); //must re-add the ordering icons
-			}
-			else { //otherwise, it is much simpler
+			if (savetype == images.TAG_Byte_Array || savetype == images.TAG_Int_Array) savetag.attr('value', String(valueworks.value)); //make sure array is properly converted to string representation
+			else { //only need to change the displayed value if not a TAG_Byte_Array or TAG_Int_Array
 				savetag.attr('value', valueworks.value); //record new value
 				var spanchild = savetag.children('span'); //get the span element that displays the value
 				var savevalue = formatvalue(valueworks.value, savetag.children('img.type').attr('src'));
@@ -568,7 +549,7 @@ function savename() { //save the new name
 		var newname = $('input#nameinput').val(); //fetch the new name
 		savetag.attr('key', newname); //save the new key
 		var spanchild = savetag.children('span'); //get the span element that displays the value
-		if (savetag.attr('value') === undefined) spanchild.text(newname + ':'); //if the tag has children, just display the new name
+		if (savetag.children('img.type').attr('src') == images.TAG_List || savetag.children('img.type').attr('src') == images.TAG_Compound || savetag.children('img.type').attr('src') == images.TAG_Byte_Array || savetag.children('img.type').attr('src') == images.TAG_Int_Array) spanchild.text(newname + ':'); //if the tag has children, just display the new name
 		else spanchild.text(newname + ': ' + formatvalue(savetag.attr('value'), savetag.children('img.type').attr('src'))); //if a tag without children, display the new name and the unchanged value
 		sortkeys(savetag.parent());
 		closename(); //the name input doesn't need to be shown anymore
@@ -650,13 +631,9 @@ function add() { //opens the type selection interface for adding a new tag to a 
 		settypeselect('null'); //show all possible new tags
 		$('div#tagtype').show(); //allow tag type to be selected
 	}
-	else if (parent.attr('type')) { //adding an element to a list; type is implied and name is not applicable, so create it immediately
+	else { //adding an element to a list; type is implied and name is not applicable, so create it immediately
 		if (parent.attr('type') == 'null') alert('Cannot add an element to a null-typed list. Convert the type first.');
 		else createtag(parent.attr('type'));
-	}
-	else { //adding an element to a byte array or int array
-		var parenttype = parent.children('img.type').attr('title');
-		createtag(parenttype.substring(0, parenttype.length - '_Array'.length)); //take off the array ending on the type
 	}
 	parent.children('ul').show();
 }
@@ -706,10 +683,8 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 			var valueworks, elements = savetag.children('ul').children(); //success is coercibility, valueworks is the result of valuecheck(), elements is the array of children
 			success = true;
 			for (var i = 0, j; i < elements.length; i++) { //for each element
-				if (elements.eq(i).attr('value') === undefined) { //converting a Byte_Array or Int_Array
-					var subchildren = elements.eq(i).children('ul').children(), items = []; //subchildren is the set of children of each element of the list, items contains their values
-					for (j = 0; j < subchildren.length; j++) items[j] = subchildren.eq(j).attr('value'); //create an array of values of each child of the Byte_Array or Int_Array
-					valueworks = valuecheck(images[tagtype], items.join('\n')); //check that the values are allowed
+				if (savetag.attr('type') == TAG_Byte_Array || savetag.attr('type') == TAG_Int_Array) { //converting a Byte_Array or Int_Array
+					valueworks = valuecheck(images[tagtype], elements.eq(i).attr('value').replace(/,/g, '\n')); //check that the values are allowed
 					if (!valueworks.success) { //if it didn't work, record so
 						success = false;
 						alert(valueworks.message);
@@ -746,16 +721,11 @@ function savecoerce() { //checks to see if the coercion is valid, saves it if it
 		if (success) settypeattr(savetag.children('img.subtype'), tagtype);
 	}
 	else { //if dealing with a single member of a compound
-		if (savetag.attr('value') === undefined) { //if a Byte_Array or Int_Array
+		if (savetag.children('img.type').attr('src') == images.TAG_Byte_Array || savetag.children('img.type').attr('src') == images.TAG_Int_Array) { //converting a Byte_Array or Int_Array
 			var src = images[tagtype]; //get new image src
-			if (tagtype == TAG_Byte_Array) var subsrc = images.TAG_Byte; //get src for children
-			else var subsrc = images.TAG_Int;
-			var elements = savetag.children('ul').children(), items = []; //elements is the list of children, items is the array of their values
-			for (var i = 0; i < elements.length; i++) items[i] = elements.eq(i).attr('value'); //form the list of values
-			var valueworks = valuecheck(src, items.join('\n')); //check values
+			var valueworks = valuecheck(src, savetag.attr('value').replace(/,/g, '\n')); //check values
 			if (valueworks.success) { //if all the children are allowed
 				savetag.children('img.type').attr('src', src); //change the type image src of the parent
-				for (i = 0; i < elements.length; i++) elements.eq(i).children('img.type').attr('src', subsrc); //change the type image of all the children
 				success = true;
 			}
 			else alert(valueworks.message); //otherwise, alert so
@@ -796,7 +766,7 @@ function showcoerce() { //see showedit()
 	}
 }
 
-function addudicons(list) { //add ordering icons to a Byte_Array, List, or Int_Array's container
+function addudicons(list) { //add ordering icons to a TAG_List's container
 	var elements = list.children(), element, j; //elements is the list of children, element is the element inside the child that has the mouseover handlers
 	for (var i = 0; i < elements.length; i++) { //for each child
 		//get the element that has the click handlers
