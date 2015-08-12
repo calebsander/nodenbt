@@ -89,31 +89,39 @@ Write.prototype.setChunkTimestamp = function(x, z, timestamp) {
 //Set the index in the file of the sector containing the specified chunk and its length in sectors
 Write.prototype.setChunkLocation = function(x, z, sector, length) {
 	const offset = calculateChunkOffset(x, z);
-	this.buffer.writeUInt16BE(offset, sector >> 8);
-	this.buffer.writeUInt8(offset + 2, sector % 256);
-	this.buffer.writeUInt8(offset + 3, length);
-}
+	this.buffer.writeUInt16BE(sector >> 8, offset);
+	this.buffer.writeUInt8(sector % 256, offset + 2);
+	this.buffer.writeUInt8(length, offset + 3);
+};
 //Write all the chunk data (see format above)
 Write.prototype.setAllChunks = function(data) {
-	var sector = 2; //start after the locations and timestamps
-	var length; //length in sectors of the chunk data
+	var compressedChunk; //a Buffer containing the compressed chunk data
+	var chunkLength; //length in bytes of the chunk data and compression scheme byte
+	var length, sectorLength; //length in (bytes, sectors) of the chunk data and metadata
 	var chunkBuffer; //buffer of compressed chunk data to append
 	for (var x = 0, z; x < 32; x++) { //iterate over every chunk
 		for (z = 0; z < 32; z++) {
 			if (data[x][z]) {
-				zlib.deflate(data[x][z], function (err, compressedChunk) {
-					length = Math.ceil(compressedChunk.length / SECTOR_LENGTH);
-					chunkBuffer = new Buffer(SECTOR_LENGTH * length);
-					compressedChunk.copy(chunkBuffer); //copy the data into the chunkBuffer
-					chunkBuffer.fill(0x00, compressedChunk.length); //pad the rest to make it a full sector
-					this.setChunkLocation(x, z, sector, length);
-					this.buffer = Buffer.append(this.buffer, chunkBuffer.buffer);
-				});
+				compressedChunk = zlib.deflateSync(data[x][z]);
+				chunkLength = compressedChunk.length + 1;
+				length = chunkLength + 4;
+				sectorLength = Math.ceil(length / SECTOR_LENGTH);
+				chunkBuffer = new Buffer(SECTOR_LENGTH * sectorLength);
+				chunkBuffer.writeUInt32BE(chunkLength, 0);
+				chunkBuffer.writeUInt8(ZLIB_COMPRESSION, 4);
+				compressedChunk.copy(chunkBuffer, 5); //copy the data into the chunkBuffer
+				chunkBuffer.fill(0x00, length); //pad the rest to make it a full sector
+				this.setChunkLocation(x, z, this.buffer.length / SECTOR_LENGTH, sectorLength);
+				this.buffer = Buffer.concat([this.buffer, chunkBuffer]);
 			}
 		}
 	}
 };
+Write.prototype.getBuffer = function() {
+	return this.buffer;
+};
 
 module.exports = {
-	Read: Read
+	Read: Read,
+	Write: Write
 };
