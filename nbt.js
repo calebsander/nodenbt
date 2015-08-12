@@ -309,7 +309,7 @@ Write.prototype.computeType = function(typeName) {
 };
 Write.prototype.getBuffer = function() {
 	return this.buffer;
-}
+};
 
 function getFunctionName(prefix, type) {
 	return prefix + type.substring('TAG_'.length, type.length);
