@@ -1,0 +1,250 @@
+//Import libraries
+const fs = require('fs');
+const http = require('http');
+const url = require('url');
+const zlib = require('zlib');
+const mime = require('./node_modules/fileserver/node_modules/mime');
+const nbt = require('./nbt.js');
+
+const PORT = Number(process.argv[2] || 8080); //port to host the server on
+
+var readnbt, //a buffer containing the raw file data to be read
+	nbtobject, //a JavaScript object representing the data
+	writenbt, //raw file data to be written
+	gzip; //whether the file was compressed
+
+//HTTP SERVER
+
+function return404(res) { //should never end up getting called in normal use
+	res.setHeader('content-type', 'text/plain');
+	res.statusCode = 404;
+	res.end('404! No such page or method.');
+}
+var serv = require('./node_modules/fileserver/fileserver.js')('./files', true, return404);
+
+String.prototype.begins = function(substring) { //used to check if request URLs fall in a certain class
+	return this.substring(0, substring.length) == substring;
+}
+
+function subtype(type) { //gets the type of the inner element of an array
+	switch (type) {
+		case 'TAG_Byte_Array':
+			return 'TAG_Byte';
+		case 'TAG_Int_Array':
+			return 'TAG_Int';
+	}
+}
+//Like getPath in script.js except does the opposite thing; path array -> reference to tag
+//Note that it returns the object with 'value' and 'type' as keys
+function walkPath(path) {
+	var selected = nbtobject;
+	for (var node = 0; node < path.length; node++) { //iterate over each step
+		switch (selected.type) {
+			case 'TAG_List':
+				selected = {
+					'type': selected.value.type,
+					'value': selected.value.list[path[node]]
+				};
+				break;
+			case 'TAG_Compound':
+				selected = selected.value[path[node]];
+				break;
+			default: //TAG_Byte_Array or TAG_Int_Array
+				selected = {
+					'type': subtype(selected.type),
+					'value': selected.value[path[node]]
+				};
+		}
+		if (!selected) throw new Error('Not a valid path: ' + String(path[node])); //catch errors more elegantly than by letting undefined go through
+	}
+	return selected;
+}
+
+var maxUploadLength = 1e7; //to avoid running out of memory, don't allow more than 10MB to be uploaded at once
+function checkUploadSize(data, req, res) { //if data overload, respond that too much data was uploaded and destroy the request
+	if (data.length > maxUploadLength) {
+		res.setHeader('content-type', 'application/json');
+		res.end(JSON.stringify({success: false, message: 'data overload'}));
+		req.destroy();
+	}
+}
+
+http.createServer(function(req, res) {
+	console.log(req.url); //for debugging purposes
+	if (req.url == '/upload') { //uploading the raw file
+		var data = new Buffer(0);
+		req.on('data', function(chunk) { //build the buffer of file contents
+			data = Buffer.concat([data, chunk]);
+			checkUploadSize(data, req, res);
+		}).on('end', function() {
+			res.setHeader('content-type', 'application/json');
+			zlib.gunzip(data, function(err, result) { //try to unzip the file
+				if (err) { //not a compressed file
+					readnbt = new nbt.Read(data);
+					try {
+						nbtobject = readnbt.readCompound(0).value['']; //get past the empty base compound
+						gzip = false;
+						res.end(JSON.stringify({success: true, gzip: false}));
+					}
+					catch (error) { //would be disastrous to quit the program when a bad file is uploaded
+						console.log(error.stack);
+						res.end(JSON.stringify({success: false, message: 'not dat or gzip'}));
+					}
+				}
+				else {
+					readnbt = new nbt.Read(result);
+					try {
+						nbtobject = readnbt.readCompound(0).value[''];
+						gzip = true;
+						res.end(JSON.stringify({success: true, gzip: true}));
+					}
+					catch (error) {
+						console.log(error.stack);
+						res.end(JSON.stringify({success: false, message: 'parse failed'}));
+					}
+				}
+			});
+		});
+	}
+	else if (req.url == '/nbtjson') { //getting the JSON representation of the file
+		res.setHeader('content-type', 'application/json');
+		if (nbtobject) res.end(JSON.stringify({success: true, data: nbtobject}));
+		else res.end(JSON.stringify({success: false, message: 'no data'}));
+	}
+	else if (req.url.begins('/editnbt/')) { //editting the NBT
+		var data = '';
+		req.on('data', function(chunk) {
+			data += chunk;
+			checkUploadSize(data, req, res);
+		}).on('end', function() {
+			data = JSON.parse(data);
+			try {
+				switch (req.url) { //depending on what editting function is being used
+					case '/editnbt/up':
+						var index = data.path.pop(); //get path excluding the position in the array to be moved
+						var list = walkPath(data.path).value; //for TAG_Byte_Array or TAG_Int_Array
+						if (!Array.isArray(list)) list = list.list; //for TAG_List
+						var temp = list[index - 1]; //store the value at the index that will be overwritten
+						list[index - 1] = list[index]; //move element up
+						list[index] = temp; //move previous element down
+						break;
+					case '/editnbt/down': //see code for up
+						var index = data.path.pop();
+						var list = walkPath(data.path).value;
+						if (!Array.isArray(list)) list = list.list;
+						var temp = list[index + 1];
+						list[index + 1] = list[index];
+						list[index] = temp;
+						break;
+					case '/editnbt/edit':
+						var tag = data.path.pop(); //see code for up
+						var parent = walkPath(data.path);
+						switch (parent.type) { //save the new value (different types of parents require different fashions of locating the child)
+							case 'TAG_List':
+								parent.value.list[tag] = data.value;
+								break;
+							case 'TAG_Compound':
+								parent.value[tag].value = data.value;
+								break;
+							default: //TAG_Byte_Array or TAG_Int_Array
+								parent.value[tag] = data.value;
+						}
+						break;
+					case '/editnbt/rename':
+						var tag = data.path.pop(); //see code for up
+						var compound = walkPath(data.path).value;
+						compound[data.name] = compound[tag]; //switch tags
+						delete compound[tag]; //remove old tag
+						break;
+					case '/editnbt/delete':
+						var tag = data.path.pop(); //see code for up
+						var parent = walkPath(data.path);
+						switch (parent.type) { //remove the tag (different types of parents require different fashions of locating the child)
+							case 'TAG_List':
+								parent.value.list.splice(tag, 1);
+								break;
+							case 'TAG_Compound':
+								delete parent.value[tag];
+								break;
+							default: //TAG_Byte_Array or TAG_Int_Array
+								parent.value.splice(tag, 1);
+						}
+						break;
+					case '/editnbt/coerce':
+						var tag = walkPath(data.path); //get the tag being editted
+						if (tag.type == 'TAG_List') {
+							if (tag.value.type == 'TAG_String' && data.type != 'TAG_Long') {
+								for (var element = 0; element < tag.value.list.length; element++) tag.value.list[element] = Number(tag.value.list[element]); //convert strings to numbers
+							}
+							else if (data.type == 'TAG_String') {
+								for (var element = 0; element < tag.value.list.length; element++) tag.value.list[element] = String(tag.value.list[element]); //convert numbers to strings
+							}
+							tag.value.type = data.type;
+						}
+						else {
+							if (tag.type == 'TAG_String' && data.type != 'TAG_Long') tag.value = Number(tag.value); //convert strings to numbers
+							else if (data.type == 'TAG_String') tag.value = String(tag.value); //convert numbers to strings
+							tag.type = data.type;
+						}
+						break;
+					case '/editnbt/add':
+						var parent = walkPath(data.path); //get tag being added to
+						switch (parent.type) {
+							case 'TAG_List':
+								parent.value.list.push(data.value);
+								break;
+							case 'TAG_Compound':
+								parent.value[data.key] = {
+									'type': data.type,
+									'value': data.value
+								};
+								break;
+							default: //TAG_Byte_Array or TAG_Int_Array
+								parent.value.push(data.value);
+						}
+				}
+				res.setHeader('content-type', 'application/json');
+				res.end(JSON.stringify({success: true}));
+			}
+			catch (error) { //catch-all for something having gone wrong with editting
+				console.log(error.stack);
+				res.setHeader('content-type', 'application/json');
+				res.end(JSON.stringify({success: false, message: 'invalid instruction or path'}));
+			}
+		});
+	}
+	else if (req.url.begins('/download/')) { //downloading the new NBT file
+		if (nbtobject) {
+			try {
+				writenbt = new nbt.Write();
+				writenbt.writeCompound({'': nbtobject}, true); //include the empty base tag again
+				if (gzip) {
+					zlib.gzip(writenbt.getBuffer(), function(err, result) {
+						if (err) {
+							console.log(err.stack);
+							req.destroy(); //sending JSON will screw up the user, better to send nothing
+						}
+						else {
+							res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1)));
+							res.end(result);
+						}
+					});
+				}
+				else {
+					res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1)));
+					res.end(writenbt.getBuffer());
+				}
+			}
+			catch (error) {
+				console.log(error.stack);
+				req.destroy(); //sending JSON will screw up the user, better to send nothing
+			}
+		}
+		else {
+			res.setHeader('content-type', 'application/json');
+			res.end(JSON.stringify({success: false, message: 'no data'}));
+		}
+	}
+	else serv(res, req.url); //be a file server otherwise
+}).listen(PORT);
+console.log('Server listening on port ' + String(PORT) + '\n');
