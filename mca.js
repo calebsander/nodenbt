@@ -1,3 +1,23 @@
+/*
+	JAVASCRIPT OBJECT REPRESENTATION OF A REGION
+
+	The region file stores an area that encompasses 32x32 chunks.
+	Each chunk may or may not exist in that area.
+	When accessing chunks by X and Z index, they will be converted to region-relative chunk indices.
+	Since Read is oblivious to the location of the region, make sure you use the correct region file.
+
+	TIMESTAMP
+	Each chunk has a 32-bit unsigned integer representing its last modification time.
+	Since this is not especially useful, it is not included in the result of getChunkData().
+	The timestamp can be accessed for an individual chunk with getChunkTimestamp.
+
+	CHUNK DATA FORMAT
+	The chunks will be stored in a two-dimensional array.
+	Access an individual chunk using getChunkData()[x][z] where x and z are region-relative chunk indices.
+	The chunk data will either be undefined, indicating that the chunk doesn't exist, or a Buffer of uncompressed NBT data.
+	Use code like nbt.js to process the NBT data.
+*/
+
 const zlib = require('zlib');
 
 const SECTOR_LENGTH = 4096;
@@ -23,7 +43,7 @@ Read.prototype.chunkExists = function(x, z) {
 };
 //Get the timestamp value for the specified chunk
 Read.prototype.getChunkTimestamp = function(x, z) {
-	return readUInt32BE(calculateChunkOffset(x, z) + SECTOR_LENGTH);
+	return this.buffer.readUInt32BE(SECTOR_LENGTH + calculateChunkOffset(x, z));
 };
 //Get the uncompressed NBT data for the specified chunk
 Read.prototype.getChunkData = function(x, z) {
@@ -56,6 +76,42 @@ Read.prototype.getAllChunks = function() {
 		}
 	}
 	return result;
+};
+
+function Write() {
+	this.buffer = new Buffer(SECTOR_LENGTH * 2);
+	this.buffer.fill(0x00); //put empty locations and timestamps so it will always be a valid file
+}
+//Set the timestamp value for the specified chunk
+Write.prototype.setChunkTimestamp = function(x, z, timestamp) {
+	this.buffer.writeUInt32BE(SECTOR_LENGTH + calculateChunkOffset(x, z), timestamp);
+};
+//Set the index in the file of the sector containing the specified chunk and its length in sectors
+Write.prototype.setChunkLocation = function(x, z, sector, length) {
+	const offset = calculateChunkOffset(x, z);
+	this.buffer.writeUInt16BE(offset, sector >> 8);
+	this.buffer.writeUInt8(offset + 2, sector % 256);
+	this.buffer.writeUInt8(offset + 3, length);
+}
+//Write all the chunk data (see format above)
+Write.prototype.setAllChunks = function(data) {
+	var sector = 2; //start after the locations and timestamps
+	var length; //length in sectors of the chunk data
+	var chunkBuffer; //buffer of compressed chunk data to append
+	for (var x = 0, z; x < 32; x++) { //iterate over every chunk
+		for (z = 0; z < 32; z++) {
+			if (data[x][z]) {
+				zlib.deflate(data[x][z], function (err, compressedChunk) {
+					length = Math.ceil(compressedChunk.length / SECTOR_LENGTH);
+					chunkBuffer = new Buffer(SECTOR_LENGTH * length);
+					compressedChunk.copy(chunkBuffer); //copy the data into the chunkBuffer
+					chunkBuffer.fill(0x00, compressedChunk.length); //pad the rest to make it a full sector
+					this.setChunkLocation(x, z, sector, length);
+					this.buffer = Buffer.append(this.buffer, chunkBuffer.buffer);
+				});
+			}
+		}
+	}
 };
 
 module.exports = {

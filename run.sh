@@ -4,7 +4,7 @@ else
 	xdg-open http://localhost:8080
 fi
 if type "node" > /dev/null; then
-	node nbt.js
+	node server.js
 else
-	nodejs nbt.js
-fi 
+	nodejs server.js
+fi
