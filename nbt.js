@@ -16,11 +16,15 @@ const TAG_List = 0x09;
 const TAG_Compound = 0x0A;
 const TAG_Int_Array = 0x0B;
 
-const longuppershift = '4294967296'; //stores the value needed to multiply an integer to shift it left 32 bits - for long math
+const longUpperShift = '4294967296'; //stores the value needed to multiply an integer to shift it left 32 bits - for long math
 
 function Read(buffer) {
 	this.buffer = buffer;
 }
+//Process the entire Buffer into an object
+Read.prototype.readComplete = function() {
+	return this.readCompound(0).value['']; //get past the empty base tag
+};
 //READ NBT - read a certain tag's payload at a certain offset in the Buffer
 //each function returns the read value and its length so the offset can be changed accordingly
 Read.prototype.readByte = function(offset) {
@@ -45,7 +49,7 @@ Read.prototype.readLong = function(offset) {
 	var upperint = this.readInt(offset);
 	offset += upperint.length;
 	return {
-		'value': String(strnum.add(strnum.mul(String(upperint.value), longuppershift), String(this.buffer.readUInt32BE(offset)))), //JavaScript can't natively store 64-bit integers, so they are stored in a base-10 string representation
+		'value': String(strnum.add(strnum.mul(String(upperint.value), longUpperShift), String(this.buffer.readUInt32BE(offset)))), //JavaScript can't natively store 64-bit integers, so they are stored in a base-10 string representation
 		'length': 8
 	};
 };
@@ -211,6 +215,10 @@ Read.prototype.extractType = function(typebyte) {
 function Write() {
 	this.buffer = new Buffer(0);
 }
+//Process an entire object into a buffer
+Write.prototype.writeComplete = function(value) {
+	this.writeCompound({'': value}, true); //readd empty base tag
+};
 //WRITE NBT - write a certain tag's payload to the end of the Buffer
 //There is no need to keep track of the offset (unlike in the read functions) because the offset is always the length of the buffer
 Write.prototype.writeByte = function(value) {
@@ -233,9 +241,9 @@ Write.prototype.writeInt = function(value) {
 };
 Write.prototype.writeLong = function(value) {
 	if (strnum.gt(value, '9223372036854775807') || strnum.lt(value, '-9223372036854775808')) throw new Error('out of range: ' + value);
-	var bnb = strnum.div(value, longuppershift, true); //get upper signed int
-	var bnl = strnum.sub(value, strnum.mul(bnb, longuppershift)); //get lower unsigned int
-	if (strnum.gt(bnl, '2147483647')) bnl = strnum.sub(bnl, longuppershift); //make lower int fit in a signed int
+	var bnb = strnum.div(value, longUpperShift, true); //get upper signed int
+	var bnl = strnum.sub(value, strnum.mul(bnb, longUpperShift)); //get lower unsigned int
+	if (strnum.gt(bnl, '2147483647')) bnl = strnum.sub(bnl, longUpperShift); //make lower int fit in a signed int
 	this.writeInt(Number(bnb));
 	this.writeInt(Number(bnl));
 };

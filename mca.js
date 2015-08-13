@@ -70,8 +70,8 @@ Read.prototype.getAllChunks = function() {
 			try {
 				result[x][z] = this.getChunkData(x, z);
 			}
-			catch (err) {
-				if (err.message != CHUNK_DOESNT_EXIST) throw err;
+			catch (error) {
+				if (error.message != CHUNK_DOESNT_EXIST) throw error;
 			}
 		}
 	}
@@ -84,7 +84,7 @@ function Write() {
 }
 //Set the timestamp value for the specified chunk
 Write.prototype.setChunkTimestamp = function(x, z, timestamp) {
-	this.buffer.writeUInt32BE(SECTOR_LENGTH + calculateChunkOffset(x, z), timestamp);
+	this.buffer.writeUInt32BE(timestamp, SECTOR_LENGTH + calculateChunkOffset(x, z));
 };
 //Set the index in the file of the sector containing the specified chunk and its length in sectors
 Write.prototype.setChunkLocation = function(x, z, sector, length) {
@@ -95,24 +95,25 @@ Write.prototype.setChunkLocation = function(x, z, sector, length) {
 };
 //Write all the chunk data (see format above)
 Write.prototype.setAllChunks = function(data) {
+	if (this.buffer.length != SECTOR_LENGTH * 2) this.buffer = new Write().getBuffer(); //make sure no chunks are already stored
 	var compressedChunk; //a Buffer containing the compressed chunk data
 	var chunkLength; //length in bytes of the chunk data and compression scheme byte
 	var length, sectorLength; //length in (bytes, sectors) of the chunk data and metadata
 	var chunkBuffer; //buffer of compressed chunk data to append
 	for (var x = 0, z; x < 32; x++) { //iterate over every chunk
 		for (z = 0; z < 32; z++) {
-			if (data[x][z]) {
-				compressedChunk = zlib.deflateSync(data[x][z]);
-				chunkLength = compressedChunk.length + 1;
-				length = chunkLength + 4;
-				sectorLength = Math.ceil(length / SECTOR_LENGTH);
-				chunkBuffer = new Buffer(SECTOR_LENGTH * sectorLength);
-				chunkBuffer.writeUInt32BE(chunkLength, 0);
-				chunkBuffer.writeUInt8(ZLIB_COMPRESSION, 4);
+			if (data[x][z]) { //if chunk doesn't exist, no need to do anything since location is already set to 0x00
+				compressedChunk = zlib.deflateSync(data[x][z]); //compress the raw data
+				chunkLength = compressedChunk.length + 1; //length of chunk data + compression scheme byte
+				length = chunkLength + 4; //length of length int + compression byte + chunk data
+				sectorLength = Math.ceil(length / SECTOR_LENGTH); //all data must fit in a full number of sectors
+				chunkBuffer = new Buffer(SECTOR_LENGTH * sectorLength); //make a Buffer to store the data and padding so it has no partial sectors
+				chunkBuffer.writeUInt32BE(chunkLength, 0); //4 bytes of length information
+				chunkBuffer.writeUInt8(ZLIB_COMPRESSION, 4); //1 byte of compression scheme
 				compressedChunk.copy(chunkBuffer, 5); //copy the data into the chunkBuffer
 				chunkBuffer.fill(0x00, length); //pad the rest to make it a full sector
-				this.setChunkLocation(x, z, this.buffer.length / SECTOR_LENGTH, sectorLength);
-				this.buffer = Buffer.concat([this.buffer, chunkBuffer]);
+				this.setChunkLocation(x, z, this.buffer.length / SECTOR_LENGTH, sectorLength); //record the location of the chunk data
+				this.buffer = Buffer.concat([this.buffer, chunkBuffer]); //append onto the main file buffer
 			}
 		}
 	}

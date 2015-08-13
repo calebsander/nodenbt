@@ -85,7 +85,7 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 		remakeimages();
 		$('div#nbt').prepend($('<div>').attr('id', 'loading').text('Parsing...'));
 		$.ajax({
-			url: '/upload',
+			url: '/upload?type=' + e.target.name.substring(e.target.name.lastIndexOf('.') + 1),
 			type: 'POST',
 			dataType: 'json',
 			data: e.target.result,
@@ -95,7 +95,9 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 					gzip = server_response.gzip;
 					$('li#open').removeClass('open');
 					if (!server_response.success) {
-						$('div#loading').text('COULD NOT PARSE').addClass('error');
+						if (server_response.message == 'invalid file type') $('div#loading').text('NOT A VALID FILE TYPE');
+						else $('div#loading').text('COULD NOT PARSE');
+						$('div#loading').addClass('error');
 						return; //don't try to display an unparseable file
 					}
 					$.ajax({ //fetch the JSON version
@@ -107,7 +109,7 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 									$('div#loading').text('ERROR').addClass('error');
 									return;
 								}
-								$('a#download').attr('download', e.target.name).attr('href', '/download/' + e.target.name + '?gzip=' + String(gzip)); //download the file with the same name and same compression
+								$('a#download').attr('download', e.target.name).attr('href', '/download/' + e.target.name); //download the file with the same name and same compression
 								closeall();
 								$('div#loading').text('Rendering...');
 								setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing

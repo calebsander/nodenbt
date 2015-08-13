@@ -4,14 +4,17 @@ const http = require('http');
 const url = require('url');
 const zlib = require('zlib');
 const mime = require('./node_modules/fileserver/node_modules/mime');
+const mca = require('./mca.js');
 const nbt = require('./nbt.js');
 
 const PORT = Number(process.argv[2] || 8080); //port to host the server on
 
-var readnbt, //a buffer containing the raw file data to be read
-	nbtobject, //a JavaScript object representing the data
-	writenbt, //raw file data to be written
-	gzip; //whether the file was compressed
+var readNBT, //an instance of nbt.Read wrapping the target NBT data
+	nbtObject, //a JavaScript object representing the data
+	writeNBT, //an instance of nbt.Write wrapping nbtObject
+	gzip, //whether the file was compressed
+	type, //the file extension of the uploaded file
+	fullData; //the entire read mca object with Buffer data
 
 //HTTP SERVER
 
@@ -20,7 +23,7 @@ function return404(res) { //should never end up getting called in normal use
 	res.statusCode = 404;
 	res.end('404! No such page or method.');
 }
-var serv = require('./node_modules/fileserver/fileserver.js')('./files', true, return404);
+const serv = require('./node_modules/fileserver/fileserver.js')('./files', true, return404);
 
 String.prototype.begins = function(substring) { //used to check if request URLs fall in a certain class
 	return this.substring(0, substring.length) == substring;
@@ -37,7 +40,7 @@ function subtype(type) { //gets the type of the inner element of an array
 //Like getPath in script.js except does the opposite thing; path array -> reference to tag
 //Note that it returns the object with 'value' and 'type' as keys
 function walkPath(path) {
-	var selected = nbtobject;
+	var selected = nbtObject;
 	for (var node = 0; node < path.length; node++) { //iterate over each step
 		switch (selected.type) {
 			case 'TAG_List':
@@ -69,46 +72,70 @@ function checkUploadSize(data, req, res) { //if data overload, respond that too 
 	}
 }
 
+function openNBT(data, res) {
+	zlib.gunzip(data, function(err, result) { //try to unzip the file
+		if (err) { //not a compressed file
+			readNBT = new nbt.Read(data);
+			try {
+				nbtObject = readNBT.readComplete();
+				gzip = false;
+				res.end(JSON.stringify({success: true, gzip: false}));
+			}
+			catch (error) { //would be disastrous to quit the program when a bad file is uploaded
+				console.log(error.stack);
+				res.end(JSON.stringify({success: false, message: 'not dat or gzip'}));
+			}
+		}
+		else {
+			readNBT = new nbt.Read(result);
+			try {
+				nbtObject = readNBT.readComplete();
+				gzip = true;
+				res.end(JSON.stringify({success: true, gzip: true}));
+			}
+			catch (error) {
+				console.log(error.stack);
+				res.end(JSON.stringify({success: false, message: 'parse failed'}));
+			}
+		}
+	});
+}
+function openMCA(data, res) {
+	try {
+		readNBT = new mca.Read(data);
+		fullData = readNBT.getAllChunks();
+		var z;
+		nbtObject = [];
+		for (var x in fullData) {
+			nbtObject[x] = [];
+			for (z in fullData[x]) nbtObject[x][z] = true;
+		}
+		res.end(JSON.stringify({success: true}));
+	}
+	catch (error) {
+		console.log(error.stack);
+		res.end(JSON.stringify({success: false, message: 'parse failed'}));
+	}
+}
+
 http.createServer(function(req, res) {
 	console.log(req.url); //for debugging purposes
-	if (req.url == '/upload') { //uploading the raw file
+	if (req.url.begins('/upload')) { //uploading the raw file
+		type = url.parse(req.url, true).query.type;
 		var data = new Buffer(0);
 		req.on('data', function(chunk) { //build the buffer of file contents
 			data = Buffer.concat([data, chunk]);
 			checkUploadSize(data, req, res);
 		}).on('end', function() {
 			res.setHeader('content-type', 'application/json');
-			zlib.gunzip(data, function(err, result) { //try to unzip the file
-				if (err) { //not a compressed file
-					readnbt = new nbt.Read(data);
-					try {
-						nbtobject = readnbt.readCompound(0).value['']; //get past the empty base compound
-						gzip = false;
-						res.end(JSON.stringify({success: true, gzip: false}));
-					}
-					catch (error) { //would be disastrous to quit the program when a bad file is uploaded
-						console.log(error.stack);
-						res.end(JSON.stringify({success: false, message: 'not dat or gzip'}));
-					}
-				}
-				else {
-					readnbt = new nbt.Read(result);
-					try {
-						nbtobject = readnbt.readCompound(0).value[''];
-						gzip = true;
-						res.end(JSON.stringify({success: true, gzip: true}));
-					}
-					catch (error) {
-						console.log(error.stack);
-						res.end(JSON.stringify({success: false, message: 'parse failed'}));
-					}
-				}
-			});
+			if (type == 'dat') openNBT(data, res);
+			else if (type == 'mca' || type == 'mcr') openMCA(data, res);
+			else res.end(JSON.stringify({success: false, message: 'invalid file type'}));
 		});
 	}
 	else if (req.url == '/nbtjson') { //getting the JSON representation of the file
 		res.setHeader('content-type', 'application/json');
-		if (nbtobject) res.end(JSON.stringify({success: true, data: nbtobject}));
+		if (nbtObject) res.end(JSON.stringify({success: true, data: nbtObject, type: type}));
 		else res.end(JSON.stringify({success: false, message: 'no data'}));
 	}
 	else if (req.url.begins('/editnbt/')) { //editting the NBT
@@ -214,12 +241,12 @@ http.createServer(function(req, res) {
 		});
 	}
 	else if (req.url.begins('/download/')) { //downloading the new NBT file
-		if (nbtobject) {
+		if (nbtObject) {
 			try {
-				writenbt = new nbt.Write();
-				writenbt.writeCompound({'': nbtobject}, true); //include the empty base tag again
+				writeNBT = new nbt.Write();
+				writeNBT.writeComplete(nbtObject); //include the empty base tag again
 				if (gzip) {
-					zlib.gzip(writenbt.getBuffer(), function(err, result) {
+					zlib.gzip(writeNBT.getBuffer(), function(err, result) {
 						if (err) {
 							console.log(err.stack);
 							req.destroy(); //sending JSON will screw up the user, better to send nothing
@@ -232,7 +259,7 @@ http.createServer(function(req, res) {
 				}
 				else {
 					res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1)));
-					res.end(writenbt.getBuffer());
+					res.end(writeNBT.getBuffer());
 				}
 			}
 			catch (error) {
