@@ -31,7 +31,8 @@ var images = { //stores the URL for all image assets
 	'add': '/images/add.png',
 	'coerce': '/images/coerce.png',
 	'up': '/images/up.png',
-	'down': '/images/down.png'
+	'down': '/images/down.png',
+	'chunk': '/images/chunk.png'
 };
 
 $.ajaxTransport('+*', function(options, originalOptions, jqXHR) { //allows client to upload the raw binary contents of the NBT file instead of a string
@@ -64,6 +65,7 @@ $.ajaxTransport('+*', function(options, originalOptions, jqXHR) { //allows clien
 });
 
 var gzip; //whether the file is gzipped
+var type; //the file extension of the upload, for rendering purposes
 var modified = false; //whether the file has been editted
 
 function fileDragHover(e) { //triggered when dragging a file onto or off the filedrag div
@@ -85,7 +87,7 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 		remakeimages();
 		$('div#nbt').prepend($('<div>').attr('id', 'loading').text('Parsing...'));
 		$.ajax({
-			url: '/upload?type=' + e.target.name.substring(e.target.name.lastIndexOf('.') + 1),
+			url: '/upload?type=' + (type = e.target.name.substring(e.target.name.lastIndexOf('.') + 1)),
 			type: 'POST',
 			dataType: 'json',
 			data: e.target.result,
@@ -94,33 +96,35 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 				return function(server_response) {
 					gzip = server_response.gzip;
 					$('li#open').removeClass('open');
-					if (!server_response.success) {
+					if (!server_response.success) { //don't try to display an unparseable file
 						if (server_response.message == 'invalid file type') $('div#loading').text('NOT A VALID FILE TYPE');
 						else $('div#loading').text('COULD NOT PARSE');
 						$('div#loading').addClass('error');
-						return; //don't try to display an unparseable file
 					}
-					$.ajax({ //fetch the JSON version
-						url: '/nbtjson',
-						dataType: 'json',
-						success: (function() {
-							return function(server_response) {
-								if (!server_response.success) { //something somewhere went wrong
-									$('div#loading').text('ERROR').addClass('error');
-									return;
+					else {
+						$.ajax({ //fetch the JSON version
+							url: '/nbtjson',
+							dataType: 'json',
+							success: (function() {
+								return function(server_response) {
+									if (!server_response.success) $('div#loading').text('ERROR').addClass('error'); //something somewhere went wrong
+									else {
+										$('a#download').attr('download', e.target.name).attr('href', '/download/' + e.target.name); //download the file with the same name and same compression
+										closeall();
+										$('div#loading').text('Rendering...');
+										setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
+											$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name));
+											if (type == 'dat') $('div#nbt').append($('<ul>').append(renderJSON(server_response.data, undefined, true).addClass('shown'))); //display the JSON
+											else $('div#nbt').append(renderMCA(server_response.data).addClass('shown'));
+											if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
+											$('div#nbt>ul>li>ul').show();
+											$('div#loading').remove();
+										}, 100);
+									}
 								}
-								$('a#download').attr('download', e.target.name).attr('href', '/download/' + e.target.name); //download the file with the same name and same compression
-								closeall();
-								$('div#loading').text('Rendering...');
-								setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
-									$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name)).append($('<ul>').append(renderJSON(server_response.data, undefined, true).addClass('shown'))); //display the JSON
-									if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
-									$('div#nbt>ul>li>ul').show();
-									$('div#loading').remove();
-								}, 100);
-							}
-						}())
-					});
+							}())
+						});
+					}
 				}
 			}())
 		});
@@ -169,7 +173,7 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 	*/
 	var display = $('<li>'); //the main element
 	var typeimg = createtypeimg(data.type); //image that indicates type
-	var valuespan = $('<span>'); //span that contains the value (with a possible key prefi)
+	var valuespan = $('<span>'); //span that contains the value (with a possible key prefix)
 
 	var valuestring; //value of span text without the key
 	if (typeof(data.value) != 'object') { //for primitive types, calculate the display value
@@ -242,6 +246,22 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		display.append(container);
 	}
 	return display; //return the new element
+}
+function renderMCA(data) { //like renderJSON, but for the response on an MCA/MCR upload - shows which chunks are available
+	var shownchunks = $('<ul>');
+	var display, typeimg, valuespan; //see renderJSON
+	var x, z;
+	for (x in data) {
+		for (z in data[x]) {
+			if (data[x][z]) {
+				display = $('<li>').attr('x', x).attr('z', z); //the main element
+				typeimg = createtypeimg('chunk').click(togglecontainer).click(fetch); //image that indicates type
+				valuespan = $('<span>').text('[' + String(x) + ', ' + String(z) + ']'); //span that contains the value (with a possible key prefix)
+				shownchunks.append(display.append(typeimg).append(valuespan).append(newcontainer()));
+			}
+		}
+	}
+	return shownchunks;
 }
 function sortkeys(container) { //does an insertion sort on the elements in a compound by key
 	var elements = container.children(); //get the tags to sort
@@ -830,6 +850,21 @@ function closeall() { //close all editing windows
 	closeeditor();
 	closename();
 	closetype();
+}
+
+function fetch() { //get the full NBT data for a specific chunk
+	var parent = $(this).parent(); //parent should be the li element
+	console.log('Fetching ' + parent.attr('x') + ', ' + parent.attr('z'));
+	$.ajax({
+		'url': '/chunk/' + parent.attr('x') + '/' + parent.attr('z'),
+		'type': 'GET',
+		'dataType': 'json',
+		'success': function(response) {
+			parent.children('ul').children().remove();
+			parent.children('ul').append(renderJSON(response.data, undefined, true).addClass('shown'));
+			parent.addClass('shown').children('ul').show().children('li').children('ul').show();
+		}
+	});
 }
 
 function getpath(element) { //get an array representing the path to the tag; used for editting tags

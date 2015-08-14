@@ -272,6 +272,20 @@ http.createServer(function(req, res) {
 			res.end(JSON.stringify({success: false, message: 'no data'}));
 		}
 	}
+	else if (req.url.begins('/chunk/')) {
+		try {
+			var selectedChunk = req.url.split('/');
+			var x = selectedChunk[2], z = selectedChunk[3];
+			if (fullData[x][z] instanceof Buffer) fullData[x][z] = new nbt.Read(fullData[x][z]).readComplete();
+			res.setHeader('content-type', 'application/json');
+			res.end(JSON.stringify({success: true, data: fullData[x][z]}));
+		}
+		catch (error) {
+			console.log(error.stack);
+			res.setHeader('content-type', 'application/json');
+			res.end(JSON.stringify({success: false, message: 'invalid request'}));
+		}
+	}
 	else serv(res, req.url); //be a file server otherwise
 }).listen(PORT);
 console.log('Server listening on port ' + String(PORT) + '\n');
