@@ -40,7 +40,14 @@ function subtype(type) { //gets the type of the inner element of an array
 //Like getPath in script.js except does the opposite thing; path array -> reference to tag
 //Note that it returns the object with 'value' and 'type' as keys
 function walkPath(path) {
-	var selected = nbtObject;
+	switch (type) {
+		case 'dat': //NBT
+			var selected = nbtObject;
+			break;
+		default: //MCA
+			var selected = fullData[path[0]][path[1]];
+			path.splice(0, 2);
+	}
 	for (var node = 0; node < path.length; node++) { //iterate over each step
 		switch (selected.type) {
 			case 'TAG_List':
@@ -58,7 +65,7 @@ function walkPath(path) {
 					'value': selected.value[path[node]]
 				};
 		}
-		if (!selected) throw new Error('Not a valid path: ' + String(path[node])); //catch errors more elegantly than by letting undefined go through
+		if (selected === undefined) throw new Error('Not a valid path: ' + String(path[node])); //catch errors more elegantly than by letting undefined go through
 	}
 	return selected;
 }
@@ -104,9 +111,9 @@ function openMCA(data, res) {
 	try {
 		readNBT = new mca.Read(data);
 		fullData = readNBT.getAllChunks();
-		var z;
+		var x, z;
 		nbtObject = [];
-		for (var x in fullData) {
+		for (x in fullData) {
 			nbtObject[x] = [];
 			for (z in fullData[x]) nbtObject[x][z] = true;
 		}
@@ -116,6 +123,10 @@ function openMCA(data, res) {
 		console.log(error.stack);
 		res.end(JSON.stringify({success: false, message: 'parse failed'}));
 	}
+}
+function getProcessedNBT(x, z) {
+	if (fullData[x][z] instanceof Buffer) fullData[x][z] = new nbt.Read(fullData[x][z]).readComplete();
+	return fullData[x][z];
 }
 
 http.createServer(function(req, res) {
@@ -243,23 +254,46 @@ http.createServer(function(req, res) {
 	else if (req.url.begins('/download/')) { //downloading the new NBT file
 		if (nbtObject) {
 			try {
-				writeNBT = new nbt.Write();
-				writeNBT.writeComplete(nbtObject); //include the empty base tag again
-				if (gzip) {
-					zlib.gzip(writeNBT.getBuffer(), function(err, result) {
-						if (err) {
-							console.log(err.stack);
-							req.destroy(); //sending JSON will screw up the user, better to send nothing
+				switch (type) {
+					case 'dat': //nbt
+						writeNBT = new nbt.Write();
+						writeNBT.writeComplete(nbtObject); //include the empty base tag again
+						if (gzip) {
+							zlib.gzip(writeNBT.getBuffer(), function(err, result) {
+								if (err) {
+									console.log(err.stack);
+									req.destroy(); //sending JSON will screw up the user, better to send nothing
+								}
+								else {
+									res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1)));
+									res.end(result);
+								}
+							});
 						}
 						else {
 							res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1)));
-							res.end(result);
+							res.end(writeNBT.getBuffer());
 						}
-					});
-				}
-				else {
-					res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1)));
-					res.end(writeNBT.getBuffer());
+						break;
+					default: //mca
+						var chunks = [];
+						var tempWrite; //temporary nbt.Write instance
+						var x, z;
+						for (x in fullData) {
+							if (chunks[x] === undefined) chunks[x] = [];
+							for (z in fullData[x]) {
+								if (fullData[x][z] instanceof Buffer) chunks[x][z] = fullData[x][z];
+								else {
+									tempWrite = new nbt.Write();
+									tempWrite.writeComplete(fullData[x][z]);
+									chunks[x][z] = tempWrite.getBuffer();
+								}
+							}
+						}
+						res.setHeader('content-type', mime.lookup(req.url.substring(req.url.lastIndexOf('.') + 1)));
+						writeNBT = new mca.Write();
+						writeNBT.setAllChunks(chunks);
+						res.end(writeNBT.getBuffer());
 				}
 			}
 			catch (error) {
@@ -276,9 +310,8 @@ http.createServer(function(req, res) {
 		try {
 			var selectedChunk = req.url.split('/');
 			var x = selectedChunk[2], z = selectedChunk[3];
-			if (fullData[x][z] instanceof Buffer) fullData[x][z] = new nbt.Read(fullData[x][z]).readComplete();
 			res.setHeader('content-type', 'application/json');
-			res.end(JSON.stringify({success: true, data: fullData[x][z]}));
+			res.end(JSON.stringify({success: true, data: getProcessedNBT(x, z)}));
 		}
 		catch (error) {
 			console.log(error.stack);

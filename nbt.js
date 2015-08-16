@@ -284,7 +284,7 @@ Write.prototype.writeInt_Array = function(value) {
 	this.writeInt(value.length);
 	for (var i = 0; i < value.length; i++) this.writeInt(value[i]);
 };
-//The opposite of extractType; returns the TAG id and the function necessary to write the tag
+//The opposite of extractType; returns the TAG id necessary to write the tag
 Write.prototype.computeType = function(typeName) {
 	switch (typeName) {
 		case null: //should never be written

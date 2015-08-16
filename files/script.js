@@ -114,10 +114,12 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 										$('div#loading').text('Rendering...');
 										setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
 											$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name));
-											if (type == 'dat') $('div#nbt').append($('<ul>').append(renderJSON(server_response.data, undefined, true).addClass('shown'))); //display the JSON
+											if (type == 'dat') {
+												$('div#nbt').append($('<ul>').append(renderJSON(server_response.data, undefined, true).addClass('shown'))); //display the JSON
+												$('div#nbt>ul>li>ul').show();
+											}
 											else $('div#nbt').append(renderMCA(server_response.data).addClass('shown'));
 											if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
-											$('div#nbt>ul>li>ul').show();
 											$('div#loading').remove();
 										}, 100);
 									}
@@ -249,15 +251,16 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 }
 function renderMCA(data) { //like renderJSON, but for the response on an MCA/MCR upload - shows which chunks are available
 	var shownchunks = $('<ul>');
-	var display, typeimg, valuespan; //see renderJSON
+	var display, typeimg, valuespan, container; //see renderJSON
 	var x, z;
 	for (x in data) {
 		for (z in data[x]) {
 			if (data[x][z]) {
 				display = $('<li>').attr('x', x).attr('z', z); //the main element
-				typeimg = createtypeimg('chunk').click(togglecontainer).click(fetch); //image that indicates type
+				typeimg = createtypeimg('chunk').click(fetch).click(togglecontainer); //image that indicates type
 				valuespan = $('<span>').text('[' + String(x) + ', ' + String(z) + ']'); //span that contains the value (with a possible key prefix)
-				shownchunks.append(display.append(typeimg).append(valuespan).append(newcontainer()));
+				container = newcontainer();
+				shownchunks.append(display.append(typeimg).append(valuespan).append(container));
 			}
 		}
 	}
@@ -854,30 +857,34 @@ function closeall() { //close all editing windows
 
 function fetch() { //get the full NBT data for a specific chunk
 	var parent = $(this).parent(); //parent should be the li element
+	if (!parent.children('ul').is(':visible')) {
 	console.log('Fetching ' + parent.attr('x') + ', ' + parent.attr('z'));
-	$.ajax({
-		'url': '/chunk/' + parent.attr('x') + '/' + parent.attr('z'),
-		'type': 'GET',
-		'dataType': 'json',
-		'success': function(response) {
-			parent.children('ul').children().remove();
-			parent.children('ul').append(renderJSON(response.data, undefined, true).addClass('shown'));
-			parent.addClass('shown').children('ul').show().children('li').children('ul').show();
-		}
-	});
+		$.ajax({
+			'url': '/chunk/' + parent.attr('x') + '/' + parent.attr('z'),
+			'type': 'GET',
+			'dataType': 'json',
+			'success': function(response) {
+				parent.children('ul').children().remove();
+				parent.children('ul').append(renderJSON(response.data, undefined, true).addClass('shown'));
+				parent.children('ul').show().children('li').children('ul').show();
+			}
+		});
+	}
 }
 
 function getpath(element) { //get an array representing the path to the tag; used for editting tags
-	if (element.parent().parent().is('li')) { //if not the top element
-		var path = getpath(element.parent().parent()); //get parent's path, then add to it
+	var parent = element.parent().parent();
+	if (parent.is('li')) { //if not the top element
+		var path = getpath(parent); //get parent's path, then add to it
 		if (element.attr('key')) path.push(element.attr('key')); //if in a compound tag and has key
-		else { //if no key, either in a list or in a compound without a key
-			if (element.parent().parent().children('img.type').attr('src') == images.TAG_Compound) path.push(''); //if a nameless compound tag
-			else path.push(element.parent().children().index(element)); //if in a list, get index
+		else { //if no key, either in a list, a compound without a key, or a chunk
+			if (parent.children('img.type').attr('src') == images.TAG_Compound) path.push(''); //if a nameless compound tag
+			else if (parent.children('img.type').attr('src') == images.TAG_List) path.push(element.parent().children().index(element)); //if in a list, get index
 		}
 		return path;
 	}
-	else return []; //if the top element
+	else if (element.attr('x')) return [element.attr('x'), element.attr('z')]; //if a chunk tag
+	else return []; //if the top element in an NBT structure
 }
 
 $(document).ready(function() { //mess with elements when they have all loaded
