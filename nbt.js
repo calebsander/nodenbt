@@ -1,6 +1,59 @@
+/*
+	JAVASCRIPT OBJECT REPRESENTATION OF NBT DATA
+
+	VALUE FORMATS
+		TAG_Byte: integer between -128 and 127 inclusive
+		TAG_Short: integer between -32768 and 32767 inclusive
+		TAG_Int: integer between -2147483648 and 2147483647 inclusive
+		TAG_Long: string representation of an integer between -9223372036854775808 and 9223372036854775807 inclusive
+			The number must be stored as a string because JavaScript is only capable of storing 53-bit integers
+		TAG_Flaot: floating point number
+		TAG_Double: double-precision floating point number
+		TAG_Byte_Array: array of TAG_Byte values
+		TAG_String: string
+		TAG_List: object with the following keys:
+			{
+				"type": string representation of tag type (e.g. "TAG_Double"),
+				"list": array of values of the specified type
+			}
+		TAG_Compound: object where each key is the name of a tag contained in the compound and its value has the following format:
+			{
+				"type": string representation of tag type (e.g. "TAG_Double"),
+				"value": value of the specified type
+			}
+		TAG_Int_Array: array of TAG_Int values
+
+	DESIGN
+		The library consists of two parts: read functions and write functions.
+		READ
+			An instance of the Read class is constructed around the Buffer being read from.
+			There is a read fuction for each tag type's payload with the following functionality:
+				-It is passed a position in the Buffer to start reading at
+				-It returns an object with two keys:
+					{
+						"value": the value that was read,
+						"length": the number of bytes long that the tag was
+					}
+			The read functions for the more complicated types make use of the simpler read functions.
+		WRITE
+			An instance of the Write class is constructed around the Buffer being written to.
+			There is a write function for each tag type's payload with the following functionality:
+				-It is passed a value to write
+				-The value is written onto the end of the Buffer
+			writeCompound can be passed one additional field, omitEnd:
+				If this field is set to true, the TAG_End byte won't be written at the end.
+				This should only be used if the TAG_Compound is the root-level one, such that the end is implied by the end of the Buffer.
+
+	USAGE
+	The read functions allow for reading any tag's value at any specified position in the Buffer.
+	This may be useful for specific applications, but it is probably easiest simply to use readComplete().
+	Similarly, it is possible to write any tag's payload onto the end of the write Buffer, but using writeComplete() is recommended.
+	The value that readComplete() returns and writeComplete() expects is a value from a name-value pair of a TAG_Compound's value.
+*/
+
 //Import libraries
 const util = require('util');
-const strnum = require('./strint.js');
+const strnum = require('./strint.js'); //does the math required for reading and writing TAG_Long payloads, which are numbers stored as strings
 
 //NBT tag ID constants
 const TAG_End = 0x00;
