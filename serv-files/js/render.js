@@ -142,10 +142,14 @@ function sortkeys(container) { //does an insertion sort on the elements in a com
 	}
 }
 function initializeList(list) { //add ordering icons to a TAG_List's container
-	var elements = list.children(), element, j; //elements is the list of children, element is the element inside the child that has the mouseover handlers
+	var elements = list.children(), //the list of children
+		element; //the element inside the child that has the mouseover handlers
 	for (var i = 0; i < elements.length; i++) { //for each child
 		//get the element that has the click handlers
-		if (elements.eq(i).children('span').length) element = elements.eq(i).children('span'); //if the child has a span, use it
+		if (elements.eq(i).children('span').length) {
+			element = elements.eq(i).children('span'); //if the child has a span, use it
+			element.text(String(i) + ': ' + formatvalue(element.parent().attr('value'), element.parent().children('img.type').attr('src'))); //display an index number if there is already a valuespan
+		}
 		else element = elements.eq(i).children('img.type'); //otherwise, use the type image
 		element.off('mouseover', showup).off('mouseover', showdown); //remove any past ordering icons
 		if (i) element.mouseover(showup); //if not the first element, add an up icon
