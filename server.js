@@ -23,7 +23,7 @@ function return404(res) { //should never end up getting called in normal use
 	res.statusCode = 404;
 	res.end('404! No such page or method.');
 }
-const serv = require('./node_modules/fileserver/fileserver.js')('./files', true, return404);
+const serv = require('./node_modules/fileserver/fileserver.js')('./serv-files', true, return404);
 
 String.prototype.begins = function(substring) { //used to check if request URLs fall in a certain class
 	return this.substring(0, substring.length) == substring;

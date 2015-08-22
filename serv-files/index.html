@@ -8,7 +8,19 @@
 		<script src = '/Flat-UI/dist/js/flat-ui.min.js'></script>
 		<script src = '/ace/ace.js' charset = 'utf-8'></script>
 		<script src = '/js/strint.js'></script>
-		<script src = '/script.js'></script>
+		<!--JavaScript components-->
+		<script src = '/js/constants.js'></script>
+		<script src = '/js/fileread.js'></script>
+		<script src = '/js/render.js'></script>
+		<script src = '/js/edit-common.js'></script>
+		<script src = '/js/edit.js'></script>
+		<script src = '/js/delete.js'></script>
+		<script src = '/js/rename.js'></script>
+		<script src = '/js/add.js'></script>
+		<script src = '/js/coerce.js'></script>
+		<script src = '/js/ud.js'></script>
+		<script src = '/js/mca-tools.js'></script>
+		<script src = '/js/onload.js'></script>
 	</head>
 	<body>
 		<nav class = 'navbar navbar-default navbar-inverse' role = 'navigation'>
@@ -21,6 +33,29 @@
 				</li>
 				<li>
 					<a href = '#' id = 'download'>Download</a>
+				</li>
+			</ul>
+			<ul class = 'nav navbar-nav navbar-right'>
+				<li class = 'dropdown keep-open'>
+					<a class = 'dropdown-toggle' id = 'locator' data-toggle = 'dropdown'>
+						Find MCA File
+						<span class = 'caret'></span>
+					</a>
+					<ul class = 'dropdown-menu dropdown-menu-inverse' role = 'menu'>
+						<li id = 'li-x'>
+							<div class = 'input-group'>
+								<span class = 'input-group-addon' id = 'x-label'>X</span>
+								<input class = 'form-control' id = 'x' aria-describedby = 'x-label' />
+							</div>
+						</li>
+						<li id = 'li-z'>
+							<div class = 'input-group'>
+								<span class = 'input-group-addon' id = 'z-label'>Z</span>
+								<input class = 'form-control' id = 'z' aria-describedby = 'z-label' />
+							</div>
+						</li>
+						<li id = 'filename'></li>
+					</ul>
 				</li>
 			</ul>
 		</nav>
