@@ -116,7 +116,7 @@ function renderMCA(data) { //like renderJSON, but for the response on an MCA/MCR
 				typeImg = createTypeImg('chunk').click(fetch).click(toggleContainer); //image that indicates type
 				valueSpan = $('<span>').text('[' + String(x) + ', ' + String(z) + ']'); //span that contains the value (with a possible key prefix)
 				container = newContainer();
-				shownChunks.append(display.append(typeImg).append(valuespan).append(container));
+				shownChunks.append(display.append(typeImg).append(valueSpan).append(container));
 			}
 		}
 	}
@@ -157,16 +157,17 @@ function initializeList(list) { //add ordering icons to a TAG_List's container
 	}
 }
 
-function fetch(x, z) { //get the full NBT data for a specific chunk
-	x = String(x) || parent.attr('x');
-	z = String(z) || parent.attr('z');
+function fetch() { //get the full NBT data for a specific chunk
 	var parent = $(this).parent(); //parent should be the li element
+	var x = parent.attr('x');
+	var z = parent.attr('z');
 	if (!parent.children('ul').children().length) {
 		$.ajax({
 			'url': '/chunk/' + x + '/' + z,
 			'type': 'GET',
 			'dataType': 'json',
 			'success': function(response) {
+				console.log(response);
 				parent.children('ul').children().remove();
 				parent.children('ul').append(renderJSON(response.data, undefined, true).addClass('shown'));
 				parent.children('ul').show().children('li').children('ul').show();
