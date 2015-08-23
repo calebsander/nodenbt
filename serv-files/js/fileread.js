@@ -47,7 +47,7 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 	reader.type = files[0].type;
 	reader.onload = function(e) { //when file has been processed into memory, upload it to the server and display it
 		$('div#nbt').children().remove();
-		remakeimages();
+		remakeImages();
 		$('div#nbt').prepend($('<div>').attr('id', 'loading').text('Parsing...'));
 		$.ajax({
 			url: '/upload?type=' + (type = e.target.name.substring(e.target.name.lastIndexOf('.') + 1)),
@@ -56,11 +56,11 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 			data: e.target.result,
 			processData: false, //so jQuery doesn't coerce it into a string first
 			success: (function() {
-				return function(server_response) {
-					gzip = server_response.gzip;
+				return function(response) {
+					gzip = response.gzip;
 					$('li#open').removeClass('open');
-					if (!server_response.success) { //don't try to display an unparseable file
-						if (server_response.message == 'invalid file type') $('div#loading').text('NOT A VALID FILE TYPE');
+					if (!response.success) { //don't try to display an unparseable file
+						if (response.message == 'invalid file type') $('div#loading').text('NOT A VALID FILE TYPE');
 						else $('div#loading').text('COULD NOT PARSE');
 						$('div#loading').addClass('error');
 					}
@@ -69,19 +69,19 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 							url: '/nbtjson',
 							dataType: 'json',
 							success: (function() {
-								return function(server_response) {
-									if (!server_response.success) $('div#loading').text('ERROR').addClass('error'); //something somewhere went wrong
+								return function(response) {
+									if (!response.success) $('div#loading').text('ERROR').addClass('error'); //something somewhere went wrong
 									else {
 										$('a#download').attr('download', e.target.name).attr('href', '/download/' + e.target.name); //download the file with the same name and same compression
-										closeall();
+										closeAll();
 										$('div#loading').text('Rendering...');
 										setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
 											$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name));
 											if (type == 'dat') {
-												$('div#nbt').append($('<ul>').append(renderJSON(server_response.data, undefined, true).addClass('shown'))); //display the JSON
+												$('div#nbt').append($('<ul>').append(renderJSON(response.data, undefined, true).addClass('shown'))); //display the JSON
 												$('div#nbt>ul>li>ul').show();
 											}
-											else $('div#nbt').append(renderMCA(server_response.data).addClass('shown'));
+											else $('div#nbt').append(renderMCA(response.data).addClass('shown'));
 											if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
 											$('div#loading').remove();
 										}, 100);

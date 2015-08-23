@@ -29,7 +29,7 @@ String.prototype.begins = function(substring) { //used to check if request URLs 
 	return this.substring(0, substring.length) == substring;
 }
 
-function subtype(type) { //gets the type of the inner element of an array
+function subType(type) { //gets the type of the inner element of an array
 	switch (type) {
 		case 'TAG_Byte_Array':
 			return 'TAG_Byte';
@@ -37,7 +37,7 @@ function subtype(type) { //gets the type of the inner element of an array
 			return 'TAG_Int';
 	}
 }
-//Like getPath in script.js except does the opposite thing; path array -> reference to tag
+//Like getPath in script.js except does the opposite thing: path array -> reference to tag
 //Note that it returns the object with 'value' and 'type' as keys
 function walkPath(path) {
 	switch (type) {
@@ -61,7 +61,7 @@ function walkPath(path) {
 				break;
 			default: //TAG_Byte_Array or TAG_Int_Array
 				selected = {
-					'type': subtype(selected.type),
+					'type': subType(selected.type),
 					'value': selected.value[path[node]]
 				};
 		}

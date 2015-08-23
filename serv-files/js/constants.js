@@ -12,7 +12,7 @@ const TAG_List = 'TAG_List';
 const TAG_Compound = 'TAG_Compound';
 const TAG_Int_Array = 'TAG_Int_Array';
 
-const images = { //stores the URL for all image assets
+const IMAGES = { //stores the URL for all image assets
 	'null': '/images/TAG_End.png',
 	'TAG_Byte': '/images/TAG_Byte.png',
 	'TAG_Short': '/images/TAG_Short.png',
@@ -35,7 +35,7 @@ const images = { //stores the URL for all image assets
 	'chunk': '/images/chunk.png'
 };
 
-const coerceto = { //stores possible new tag types for conversion (not all may actually work)
+const COERCE_TO = { //stores possible new tag types for conversion (not all may actually work)
 	//null is a special case because it should only be used on lists of length 0 without a specified type
 	'null': [TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double, TAG_Byte_Array, TAG_String, TAG_List, TAG_Compound, TAG_Int_Array],
 	'TAG_Byte': [TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double, TAG_String],
@@ -49,7 +49,7 @@ const coerceto = { //stores possible new tag types for conversion (not all may a
 	'TAG_Int_Array': [TAG_Byte_Array]
 };
 
-const defaults = { //the values to initialize new elements at
+const DEFAULTS = { //the values to initialize new elements at
 	'TAG_Byte':       0,
 	'TAG_Short':      0,
 	'TAG_Int':        0,

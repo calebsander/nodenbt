@@ -1,4 +1,4 @@
-function togglecontainer() { //triggered when clicking on a Byte_Array, Int_Array, List, or Compound's images - shows its children
+function toggleContainer() { //triggered when clicking on a Byte_Array, Int_Array, List, or Compound's images - shows its children
 	var li = $(this).parent();
 	var container = li.children('ul');
 	if (container.is(':visible')) {
@@ -11,14 +11,14 @@ function togglecontainer() { //triggered when clicking on a Byte_Array, Int_Arra
 	}
 }
 
-function newcontainer() { //returns a new container that can have subtags added to it
+function newContainer() { //returns a new container that can have subtags added to it
 	return $('<ul>').addClass('nbtcontainer').hide();
 }
-function settypeattr(img, type) { //changes the src and title attributes of an img.type element to match a certain type
-	return img.attr('src', images[type]).attr('title', type || TAG_End);
+function setTypeAttr(img, type) { //changes the src and title attributes of an img.type element to match a certain type
+	return img.attr('src', IMAGES[type]).attr('title', type || TAG_End);
 }
-function createtypeimg(type) { //create a new type image of a certain type
-	return settypeattr($('<img>').addClass('type'), type);
+function createTypeImg(type) { //create a new type image of a certain type
+	return setTypeAttr($('<img>').addClass('type'), type);
 }
 function renderJSON(data, key, root) { //a recursive function to create an element that represents a tag
 	/*
@@ -30,45 +30,45 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 		returns the li element
 	*/
 	var display = $('<li>'); //the main element
-	var typeimg = createtypeimg(data.type); //image that indicates type
-	var valuespan = $('<span>'); //span that contains the value (with a possible key prefix)
+	var typeImg = createTypeImg(data.type); //image that indicates type
+	var valueSpan = $('<span>'); //span that contains the value (with a possible key prefix)
 
-	var valuestring; //value of span text without the key
+	var valueString; //value of span text without the key
 	if (typeof(data.value) != 'object') { //for primitive types, calculate the display value
-		valuestring = String(data.value);
+		valueString = String(data.value);
 		display.attr('value', data.value);
 	}
-	else valuestring = ''; //for complicated types (with subtags), don't display a value
+	else valueString = ''; //for complicated types (with subtags), don't display a value
 
-	var mousetarget; //target for mouseover handlers (only applicable when there are subtags (so valuestring == ''))
-	if (key === undefined) mousetarget = typeimg; //if no key, then valuespan will be empty, so use the image
+	var mouseTarget; //target for mouseover handlers (only applicable when there are subtags (so valuestring == ''))
+	if (key === undefined) mouseTarget = typeImg; //if no key, then valuespan will be empty, so use the image
 	else {
-		mousetarget = valuespan; //if a key, then target the span
-		valuespan.mouseover(showrename); //make the tag renamable
+		mouseTarget = valueSpan; //if a key, then target the span
+		valueSpan.mouseover(showRename); //make the tag renamable
 	}
 
 	var container; //will contain subtags if there are any
 
 	if ([TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double].indexOf(data.type) != -1) { //numerical types should be treated the same
-		valuespan.mouseover(removeicons);
-		if (key !== undefined) valuespan.mouseover(showcoerce);
-		valuespan.mouseover(showdelete).mouseover(showedit);
+		valueSpan.mouseover(removeIcons);
+		if (key !== undefined) valueSpan.mouseover(showCoerce);
+		valueSpan.mouseover(showDelete).mouseover(showEdit);
 	}
 	else if ([TAG_Byte_Array, TAG_Int_Array].indexOf(data.type) != -1) {
 		display.attr('value', String(data.value));
-		mousetarget.mouseover(removeicons)
-		if (key !== undefined) mousetarget.mouseover(showcoerce);
-		valuespan.mouseover(showdelete).mouseover(showedit);
+		mouseTarget.mouseover(removeIcons)
+		if (key !== undefined) mouseTarget.mouseover(showCoerce);
+		valueSpan.mouseover(showDelete).mouseover(showEdit);
 	}
 	else if (data.type == TAG_String) {
-		valuestring = '"' + valuestring + '"'; //add quotes around the value
-		valuespan.mouseover(removeicons);
-		if (key !== undefined) valuespan.mouseover(showcoerce);
-		valuespan.mouseover(showdelete).mouseover(showedit);
+		valueString = '"' + valueString + '"'; //add quotes around the value
+		valueSpan.mouseover(removeIcons);
+		if (key !== undefined) valueSpan.mouseover(showCoerce);
+		valueSpan.mouseover(showDelete).mouseover(showEdit);
 	}
 	else if (data.type == TAG_List) { //very similar to TAG_Byte_Array and TAG_Int_Array except getting type information is different and coercibility is calculated differently
 		display.attr('type', String(data.value.type)); //store the type information in the tag
-		container = newcontainer();
+		container = newContainer();
 		for (var i = 0; i < data.value.list.length; i++) { //add each of the subtags
 			container.append(renderJSON({
 				'type': data.value.type,
@@ -76,69 +76,69 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 			}));
 		}
 		initializeList(container);
-		mousetarget.mouseover(removeicons).mouseover(showcoerce).mouseover(showadd).mouseover(showdelete);
+		mouseTarget.mouseover(removeIcons).mouseover(showCoerce).mouseover(showAdd).mouseover(showDelete);
 	}
 	else if (data.type == TAG_Compound) {
-		container = newcontainer();
+		container = newContainer();
 		for (var i in data.value) container.append(renderJSON(data.value[i], i)); //add each of the subtags
-		sortkeys(container); //order the tags alphabetically
-		mousetarget.mouseover(removeicons).mouseover(showadd);
-		if (!root) mousetarget.mouseover(showdelete);
+		sortKeys(container); //order the tags alphabetically
+		mouseTarget.mouseover(removeIcons).mouseover(showAdd);
+		if (!root) mouseTarget.mouseover(showDelete);
 	}
 	else throw new Error('No such tag: ' + data.type); //should never trigger, but if it did, it would mess up everything, so better to just quit
 
-	var valuetext; //the text to assign to valuespan
-	if (key === undefined) valuetext = valuestring;
+	var valueText; //the text to assign to valuespan
+	if (key === undefined) valueText = valueString;
 	else { //if there is a key
 		display.attr('key', key); //store the key information in the tag
-		valuetext = key + ': ' + valuestring; //add key prefix
+		valueText = key + ': ' + valueString; //add key prefix
 	}
-	display.append(typeimg); //add type image
-	if (data.type == TAG_List) display.append(createtypeimg(data.value.type).addClass('subtype'));
-	if (valuetext) { //don't bother using valuespan unless it would have any text
-		valuespan.text(valuetext);
-		display.append(valuespan); //add type span
+	display.append(typeImg); //add type image
+	if (data.type == TAG_List) display.append(createTypeImg(data.value.type).addClass('subtype'));
+	if (valueText) { //don't bother using valuespan unless it would have any text
+		valueSpan.text(valueText);
+		display.append(valueSpan); //add type span
 	}
 	if (container) { //if there are subtags
-		typeimg.click(togglecontainer); //make clicking the image show/hide subtags
+		typeImg.click(toggleContainer); //make clicking the image show/hide subtags
 		display.append(container);
 	}
 	return display; //return the new element
 }
 function renderMCA(data) { //like renderJSON, but for the response on an MCA/MCR upload - shows which chunks are available
-	var shownchunks = $('<ul>');
-	var display, typeimg, valuespan, container; //see renderJSON
+	var shownChunks = $('<ul>');
+	var display, typeImg, valueSpan, container; //see renderJSON
 	var x, z;
 	for (x in data) {
 		for (z in data[x]) {
 			if (data[x][z]) {
 				display = $('<li>').attr('x', x).attr('z', z); //the main element
-				typeimg = createtypeimg('chunk').click(fetch).click(togglecontainer); //image that indicates type
-				valuespan = $('<span>').text('[' + String(x) + ', ' + String(z) + ']'); //span that contains the value (with a possible key prefix)
-				container = newcontainer();
-				shownchunks.append(display.append(typeimg).append(valuespan).append(container));
+				typeImg = createTypeImg('chunk').click(fetch).click(toggleContainer); //image that indicates type
+				valueSpan = $('<span>').text('[' + String(x) + ', ' + String(z) + ']'); //span that contains the value (with a possible key prefix)
+				container = newContainer();
+				shownChunks.append(display.append(typeImg).append(valuespan).append(container));
 			}
 		}
 	}
-	return shownchunks;
+	return shownChunks;
 }
-function sortkeys(container) { //does an insertion sort on the elements in a compound by key
+function sortKeys(container) { //does an insertion sort on the elements in a compound by key
 	var elements = container.children(); //get the tags to sort
-	var testindex, //index of current tag being tested
-		nextindex, //index of the next tag to display
-		nextkey, //the 'first' key (sorted alphabetically) of the remaining tags
-		testkey; //the current key being tested
+	var testIndex, //index of current tag being tested
+		nextIndex, //index of the next tag to display
+		nextKey, //the 'first' key (sorted alphabetically) of the remaining tags
+		testKey; //the current key being tested
 	while (elements.length) { //tags are removed from elements after being added until none are left
-		nextkey = elements.eq(0).attr('key'); //assume the first element will be added
-		nextindex = 0;
-		for (testindex = 1; testindex < elements.length; testindex++) { //go over the remaining tags looking for one with a key that should come first
-			testkey = elements.eq(testindex).attr('key');
-			if (testkey.toLowerCase() < nextkey.toLowerCase()) { //the comparison
-				nextkey = testkey;
-				nextindex = testindex;
+		nextKey = elements.eq(0).attr('key'); //assume the first element will be added
+		nextIndex = 0;
+		for (testIndex = 1; testIndex < elements.length; testIndex++) { //go over the remaining tags looking for one with a key that should come first
+			testKey = elements.eq(testIndex).attr('key');
+			if (testKey.toLowerCase() < nextKey.toLowerCase()) { //the comparison
+				nextKey = testKey;
+				nextIndex = testIndex;
 			}
 		}
-		container.append(elements.splice(nextindex, 1)); //append the chosen element to the container
+		container.append(elements.splice(nextIndex, 1)); //append the chosen element to the container
 	}
 }
 function initializeList(list) { //add ordering icons to a TAG_List's container
@@ -148,20 +148,22 @@ function initializeList(list) { //add ordering icons to a TAG_List's container
 		//get the element that has the click handlers
 		if (elements.eq(i).children('span').length) {
 			element = elements.eq(i).children('span'); //if the child has a span, use it
-			element.text(String(i) + ': ' + formatvalue(element.parent().attr('value'), element.parent().children('img.type').attr('src'))); //display an index number if there is already a valuespan
+			element.text(String(i) + ': ' + formatValue(element.parent().attr('value'), element.parent().children('img.type').attr('src'))); //display an index number if there is already a valuespan
 		}
 		else element = elements.eq(i).children('img.type'); //otherwise, use the type image
-		element.off('mouseover', showup).off('mouseover', showdown); //remove any past ordering icons
-		if (i) element.mouseover(showup); //if not the first element, add an up icon
-		if (i != elements.length - 1) element.mouseover(showdown); //if not the last element, add a down icon
+		element.off('mouseover', showUp).off('mouseover', showDown); //remove any past ordering icons
+		if (i) element.mouseover(showUp); //if not the first element, add an up icon
+		if (i != elements.length - 1) element.mouseover(showDown); //if not the last element, add a down icon
 	}
 }
 
-function fetch() { //get the full NBT data for a specific chunk
+function fetch(x, z) { //get the full NBT data for a specific chunk
+	x = String(x) || parent.attr('x');
+	z = String(z) || parent.attr('z');
 	var parent = $(this).parent(); //parent should be the li element
 	if (!parent.children('ul').children().length) {
 		$.ajax({
-			'url': '/chunk/' + parent.attr('x') + '/' + parent.attr('z'),
+			'url': '/chunk/' + x + '/' + z,
 			'type': 'GET',
 			'dataType': 'json',
 			'success': function(response) {

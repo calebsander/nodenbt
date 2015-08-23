@@ -1,22 +1,22 @@
-var renameorig; //the original tag name to compare to
+var renameOrig; //the original tag name to compare to
 function rename() { //open the rename panel
-	closeall(); //don't want to be editting anything else at the same time
+	closeAll(); //don't want to be editting anything else at the same time
 	var parent = $(this).parent(); //see edit()
-	savetag = parent; //see edit()
+	saveTag = parent; //see edit()
 	newtag = false;
-	renameorig = parent.attr('key'); //store originalname
-	$('div#tagname h3.panel-title').text('Renaming ' + renameorig); //display what is being renamed
+	renameOrig = parent.attr('key'); //store originalname
+	$('div#tagname h3.panel-title').text('Renaming ' + renameOrig); //display what is being renamed
 	$('input#nameinput').keydown(); //trigger the code that checks to see if the new name is valid (make sure no other key is named '')
 	$('div#tagname').show(); //open the renaming window
 	$('input#nameinput').focus(); //target the name input for text input
 }
-function checkname() { //checks the value of the nameinput to see if it conflicts
+function checkName() { //checks the value of the nameinput to see if it conflicts
 	var value = $(this).val(); //get value
-	if (value == renameorig) $('button#namesave').removeClass('btn-success').removeClass('btn-danger'); //if the changed value is the same as the original one, show that nothing will be changed
+	if (value == renameOrig) $('button#namesave').removeClass('btn-success').removeClass('btn-danger'); //if the changed value is the same as the original one, show that nothing will be changed
 	else { //if something is being changed
 		if (value.length < 32768) { //make sure length fixed in a short
-			if (newtag) { //if adding a new tag to a compound
-				var children = savetag.children('ul').children(); //get children of the compound
+			if (newTag) { //if adding a new tag to a compound
+				var children = saveTag.children('ul').children(); //get children of the compound
 				var success = true; //assume it worked unless an error is flagged
 				for (var i = 0; i < children.length; i++) { //go through the children
 					if (children.eq(i).attr('key') == value) { //if one of the tags is already named that, fail
@@ -26,10 +26,10 @@ function checkname() { //checks the value of the nameinput to see if it conflict
 				}
 			}
 			else { //see if (newtag)
-				var siblings = savetag.parent().children(); //get siblings (members of the same compound)
+				var siblings = saveTag.parent().children(); //get siblings (members of the same compound)
 				var success = true;
 				for (var i = 0; i < siblings.length; i++) {
-					if (siblings.eq(i).attr('key') == value && !siblings.eq(i).is(savetag)) { //if another sibling tag is already named that and isn't the one being renamed
+					if (siblings.eq(i).attr('key') == value && !siblings.eq(i).is(saveTag)) { //if another sibling tag is already named that and isn't the one being renamed
 						success = false;
 						break;
 					}
@@ -41,32 +41,32 @@ function checkname() { //checks the value of the nameinput to see if it conflict
 		else $('button#namesave').removeClass('btn-success').addClass('btn-danger');
 	}
 }
-function savename() { //save the new name
+function saveName() { //save the new name
 	if ($('button#namesave').hasClass('btn-success')) { //if the name is invalid, do nothing
-		var path = getpath(savetag); //get the path before renaming
-		var newname = $('input#nameinput').val(); //fetch the new name
-		savetag.attr('key', newname); //save the new key
-		var spanchild = savetag.children('span'); //get the span element that displays the value
-		if (savetag.children('img.type').attr('src') == images.TAG_List || savetag.children('img.type').attr('src') == images.TAG_Compound || savetag.children('img.type').attr('src') == images.TAG_Byte_Array || savetag.children('img.type').attr('src') == images.TAG_Int_Array) spanchild.text(newname + ':'); //if the tag has children, just display the new name
-		else spanchild.text(newname + ': ' + formatvalue(savetag.attr('value'), savetag.children('img.type').attr('src'))); //if a tag without children, display the new name and the unchanged value
-		sortkeys(savetag.parent());
-		closename(); //the name input doesn't need to be shown anymore
-		remakeimages();
+		var path = getPath(saveTag); //get the path before renaming
+		var newName = $('input#nameinput').val(); //fetch the new name
+		saveTag.attr('key', newName); //save the new key
+		var spanChild = saveTag.children('span'); //get the span element that displays the value
+		if (saveTag.children('img.type').attr('src') == IMAGES.TAG_List || saveTag.children('img.type').attr('src') == IMAGES.TAG_Compound || saveTag.children('img.type').attr('src') == IMAGES.TAG_Byte_Array || saveTag.children('img.type').attr('src') == IMAGES.TAG_Int_Array) spanChild.text(newName + ':'); //if the tag has children, just display the new name
+		else spanChild.text(newName + ': ' + formatValue(saveTag.attr('value'), saveTag.children('img.type').attr('src'))); //if a tag without children, display the new name and the unchanged value
+		sortKeys(saveTag.parent());
+		closeName(); //the name input doesn't need to be shown anymore
+		remakeImages();
 		$.ajax({ //see save()
 			'url': '/editnbt/rename',
 			'type': 'POST',
 			'data': JSON.stringify({
 				'path': path,
-				'name': newname
+				'name': newName
 			}),
 			'dataType': 'json',
-			'success': editsuccess,
-			'error': editerror
+			'success': editSuccess,
+			'error': editError
 		});
 		modified = true;
 	}
 }
-var renameimg = $('<img>').addClass('rename').attr('src', images.rename).attr('title', 'Rename tag');
-function showrename() { //see showedit()
-	if (!$(this).parent().children('img.rename').is(renameimg)) $(this).after(renameimg);
+var renameImg = $('<img>').addClass('rename').attr('src', IMAGES.rename).attr('title', 'Rename tag');
+function showRename() { //see showedit()
+	if (!$(this).parent().children('img.rename').is(renameImg)) $(this).after(renameImg);
 }

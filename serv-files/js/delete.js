@@ -3,19 +3,19 @@ function deleter() { //delete the tag where the delete icon was clicked
 	$.ajax({ //see save()
 		'url': '/editnbt/delete',
 		'type': 'POST',
-		'data': JSON.stringify({'path': getpath(parent)}),
+		'data': JSON.stringify({'path': getPath(parent)}),
 		'dataType': 'json',
-		'success': editsuccess,
-		'error': editerror
+		'success': editSuccess,
+		'error': editError
 	});
 	modified = true;
-	if (parent.is(savetag) || parent.find(savetag).length) closeall(); //if we deleted a tag that was being edited, close the edit windows
-	var ulcontainer = parent.parent();
+	if (parent.is(saveTag) || parent.find(saveTag).length) closeAll(); //if we deleted a tag that was being edited, close the edit windows
+	var ulContainer = parent.parent();
 	parent.remove(); //delete the tag
-	if (ulcontainer.parent().children('img.type').attr('src') != images.TAG_Compound) addudicons(ulcontainer); //if on a list/array, redo the ordering icons
-	remakeimages();
+	if (ulContainer.parent().children('img.type').attr('src') != IMAGES.TAG_Compound) initializeList(ulContainer); //if on a list, redo the ordering icons
+	remakeImages();
 }
-var deleteimg = $('<img>').addClass('delete').attr('src', images['delete']).attr('title', 'Delete tag');
-function showdelete() { //see showedit()
-	if (!$(this).parent().children('img.delete').is(deleteimg)) $(this).after(deleteimg);
+var deleteImg = $('<img>').addClass('delete').attr('src', IMAGES.delete).attr('title', 'Delete tag');
+function showDelete() { //see showedit()
+	if (!$(this).parent().children('img.delete').is(deleteImg)) $(this).after(deleteImg);
 }

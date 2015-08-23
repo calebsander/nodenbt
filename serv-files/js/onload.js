@@ -5,12 +5,12 @@ $(document).ready(function() { //mess with elements when they have all loaded
 	editor.setShowPrintMargin(false); //don't show an annoying vertical line
 	editor.setShowInvisibles(false); //don't show new lines, paragraphs, etc.
 	editor.getSession().on('change', function() { //when modifying the text
-		if (editor.getValue() == editororig) $('button#save').removeClass('btn-info'); //if editor's value is the same as the original one, show that nothing is being saved
+		if (editor.getValue() == editorOrig) $('button#save').removeClass('btn-info'); //if editor's value is the same as the original one, show that nothing is being saved
 		else $('button#save').addClass('btn-info'); //otherwise, show that something will be saved
 	});
 	editor.keyBinding.originalOnCommandKey = editor.keyBinding.onCommandKey;
 	editor.keyBinding.onCommandKey = function(e, hashId, keyCode) { //if the escape key is pressed in the editor, close it
-		if (keyCode == ESC_KEY) closeeditor();
+		if (keyCode == ESC_KEY) closeEditor();
 	};
 
 	$('div#filedrag').hover(function() { //tell the user that they can drop a file on the filedrop
@@ -23,14 +23,14 @@ $(document).ready(function() { //mess with elements when they have all loaded
 	$('input#nameinput').keydown(function(e) { //add an event handler for typing in the name input
 		switch (e.which) {
 			case ENTER_KEY: //if enter is pressed
-				if (newtag) compoundsave(); //if adding a new tag to a compound, do that
-				else savename(); //otherwise, just rename the current tag
+				if (newTag) compoundSave(); //if adding a new tag to a compound, do that
+				else saveName(); //otherwise, just rename the current tag
 				break;
 			case ESC_KEY: //if escape is pressed, close the input box
-				closename();
+				closeName();
 				break;
 			default: //if text is being entered
-				setTimeout($.proxy(checkname, this), 0); //allow new value to be registered before checking it
+				setTimeout($.proxy(checkName, this), 0); //allow new value to be registered before checking it
 		}
 	}).focus(function() { //so the button's style matches that of the input
 		$('button#namesave').removeClass('blur').addClass('focus');
@@ -38,19 +38,19 @@ $(document).ready(function() { //mess with elements when they have all loaded
 		$('button#namesave').removeClass('focus').addClass('blur');
 	});
 	$('button#namesave').click(function() { //bind click handler to name save button, see $('input#nameinput').keydown() for e.which == 13
-		if (newtag) compoundsave();
-		else savename();
+		if (newtag) compoundSave();
+		else saveName();
 	});
 	$('button#typesave').click(function() { //bind click handler to type save button
-		tagtype = $('select#typeinput').val();
-		if (newtag) { //if adding a new tag to a compound, any type is allowed
-			closetype(); //close the window
+		tagType = $('select#typeinput').val();
+		if (newTag) { //if adding a new tag to a compound, any type is allowed
+			closeType(); //close the window
 			$('div#tagname').show();
 			$('input#nameinput').focus(); //transitioning to name input, so move typehead there
 		}
-		else savecoerce(); //if coercing, check to make sure it's allowed
+		else saveCoerce(); //if coercing, check to make sure it's allowed
 	});
-	$('button#typecancel').click(closetype); //bind the tag type close button
+	$('button#typecancel').click(closeType); //bind the tag type close button
 	$('a#download').click(function() {
 		modified = false;
 	});
@@ -60,7 +60,7 @@ $(document).ready(function() { //mess with elements when they have all loaded
 	$('li#li-x,li#li-z').keydown(function() { //make changing either the x or z values update the region file
 		setTimeout(displayRegionName, 0); //allow new value to be registered before checking it
 	});
-	remakeimages(); //images need click handlers
+	remakeImages(); //images need click handlers
 	$('select').select2(); //initialize the select
 });
 
