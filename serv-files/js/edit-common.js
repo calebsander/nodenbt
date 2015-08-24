@@ -105,6 +105,7 @@ function closeAll() { //close all editing windows
 	closeEditor();
 	closeName();
 	closeType();
+	closeSearch();
 }
 
 function getPath(element) { //get an array representing the path to the tag; used for editting tags

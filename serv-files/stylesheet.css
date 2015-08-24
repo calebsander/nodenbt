@@ -44,7 +44,7 @@ a#search.shown {
 }
 div#body {
 	position:absolute;
-	top:0px;
+	top:63px;
 	left:0px;
 	right:0px;
 	bottom:0px;
@@ -55,7 +55,7 @@ div#body {
 }
 div#nbt {
 	position:absolute;
-	top:75px;
+	top:0px;
 	left:50px;
 	right:0px;
 	bottom:0px;
@@ -97,6 +97,9 @@ div#nbt li.shown:before {
 }
 div#nbt li:last-child:before {
 	border-left:1px solid black;
+}
+div#nbt li>span.highlight {
+	background:#ff0;
 }
 div.error {
 	font-family:monospace;
@@ -156,9 +159,11 @@ button#typesave, button#typecancel {
 	border:none;
 	z-index:100;
 }
-div#searchoutput {
+div#search-output {
 	position:relative;
 	top:10px;
+	font-size:14;
+  font-weight:bold;
 }
 li#li-x {
 	position:relative;
