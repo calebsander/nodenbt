@@ -21,6 +21,7 @@
 		<script src = '/js/ud.js'></script>
 		<script src = '/js/mca-tools.js'></script>
 		<script src = '/js/onload.js'></script>
+		<script src = '/js/search.js'></script>
 	</head>
 	<body>
 		<nav class = 'navbar navbar-default navbar-inverse' role = 'navigation'>
@@ -33,6 +34,9 @@
 				</li>
 				<li>
 					<a href = '#' id = 'download'>Download</a>
+				</li>
+				<li>
+					<a href = '#' id = 'search'>Search</a>
 				</li>
 			</ul>
 			<ul class = 'nav navbar-nav navbar-right'>
@@ -99,6 +103,15 @@
 							<button id = 'typecancel' class = 'btn btn-danger'>Cancel</button>
 						</span>
 					</div>
+				</div>
+			</div>
+			<div id = 'search-panel' class = 'panel panel-default'>
+				<div class = 'panel-heading'>
+					<h3 class = 'panel-title'>Search</h3>
+				</div>
+				<div class = 'panel-body'>
+					<input id = 'search-text' class = 'form-control' placeholder = 'Enter search term here' />
+					<div id = 'search-output'></div>
 				</div>
 			</div>
 		</div>

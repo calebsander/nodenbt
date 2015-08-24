@@ -57,8 +57,12 @@ $(document).ready(function() { //mess with elements when they have all loaded
 	$('li.dropdown.keep-open>ul.dropdown-menu').click(function(e) { //stop dropdown from closing when clicking in it
 		e.stopPropagation();
 	});
-	$('li#li-x,li#li-z').keydown(function() { //make changing either the x or z values update the region file
+	$('li#li-x,li#li-z').keydown(function() { //make changing either the x or z values update the region filename
 		setTimeout(displayRegionName, 0); //allow new value to be registered before checking it
+	});
+	$('a#search').click(showSearch); //bind click handler to the search function
+	$('input#search-text').keypress(function() { //display new search results
+		setTimeout($.proxy(updateSearchResults, this), 0); //allow new value to be registered before checking it
 	});
 	remakeImages(); //images need click handlers
 	$('select').select2(); //initialize the select

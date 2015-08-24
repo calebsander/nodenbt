@@ -84,6 +84,7 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 											else $('div#nbt').append(renderMCA(response.data).addClass('shown'));
 											if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
 											$('div#loading').remove();
+											$('a#search').addClass('shown');
 										}, 100);
 									}
 								}

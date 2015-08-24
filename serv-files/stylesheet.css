@@ -36,6 +36,12 @@ div#filedrag.hover {
 	border-style:solid;
 	box-shadow:inset 0 3px 4px #555;
 }
+a#search {
+	display:none;
+}
+a#search.shown {
+	display:block;
+}
 div#body {
 	position:absolute;
 	top:0px;
@@ -97,7 +103,7 @@ div.error {
 	font-size:40;
 	color:#e74c3c;
 }
-div#editor {
+div#editor, div#search-panel {
 	position:fixed;
 	top:75px;
 	left:50%;
@@ -149,6 +155,10 @@ button#typesave, button#typecancel {
 	height:41px;
 	border:none;
 	z-index:100;
+}
+div#searchoutput {
+	position:relative;
+	top:10px;
 }
 li#li-x {
 	position:relative;

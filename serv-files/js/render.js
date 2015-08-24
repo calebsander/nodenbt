@@ -167,7 +167,6 @@ function fetch() { //get the full NBT data for a specific chunk
 			'type': 'GET',
 			'dataType': 'json',
 			'success': function(response) {
-				console.log(response);
 				parent.children('ul').children().remove();
 				parent.children('ul').append(renderJSON(response.data, undefined, true).addClass('shown'));
 				parent.children('ul').show().children('li').children('ul').show();
