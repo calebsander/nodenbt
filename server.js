@@ -35,6 +35,8 @@ function subType(type) { //gets the type of the inner element of an array
 			return 'TAG_Byte';
 		case 'TAG_Int_Array':
 			return 'TAG_Int';
+		default:
+			throw new Error('Invalid array type: ' + type);
 	}
 }
 //Like getPath in script.js except does the opposite thing: path array -> reference to tag

@@ -2,31 +2,31 @@
 	JAVASCRIPT OBJECT REPRESENTATION OF NBT DATA
 
 	VALUE FORMATS
-		TAG_Byte: integer between -128 and 127 inclusive
-		TAG_Short: integer between -32768 and 32767 inclusive
-		TAG_Int: integer between -2147483648 and 2147483647 inclusive
-		TAG_Long: string representation of an integer between -9223372036854775808 and 9223372036854775807 inclusive
+		nbtConstants.TAG_Byte: integer between -128 and 127 inclusive
+		nbtConstants.TAG_Short: integer between -32768 and 32767 inclusive
+		nbtConstants.TAG_Int: integer between -2147483648 and 2147483647 inclusive
+		nbtConstants.TAG_Long: string representation of an integer between -9223372036854775808 and 9223372036854775807 inclusive
 			The number must be stored as a string because JavaScript is only capable of storing 53-bit integers
-		TAG_Flaot: floating point number
-		TAG_Double: double-precision floating point number
-		TAG_Byte_Array: array of TAG_Byte values
-		TAG_String: string
-		TAG_List: object with the following keys:
+		nbtConstants.TAG_Flaot: floating point number
+		nbtConstants.TAG_Double: double-precision floating point number
+		nbtConstants.TAG_Byte_Array: array of nbtConstants.TAG_Byte values
+		nbtConstants.TAG_String: string
+		nbtConstants.TAG_List: object with the following keys:
 			{
-				"type": string representation of tag type (e.g. "TAG_Double"),
+				"type": string representation of tag type (e.g. "nbtConstants.TAG_Double"),
 				"list": array of values of the specified type
 			}
-		TAG_Compound: object where each key is the name of a tag contained in the compound and its value has the following format:
+		nbtConstants.TAG_Compound: object where each key is the name of a tag contained in the compound and its value has the following format:
 			{
-				"type": string representation of tag type (e.g. "TAG_Double"),
+				"type": string representation of tag type (e.g. "nbtConstants.TAG_Double"),
 				"value": value of the specified type
 			}
-		TAG_Int_Array: array of TAG_Int values
+		nbtConstants.TAG_Int_Array: array of nbtConstants.TAG_Int values
 
 	DESIGN
 		The library consists of two parts: read functions and write functions.
 		READ
-			An instance of the Read class is constructed around the Buffer being read from.
+			An instance of the NBTRead class is constructed around the Buffer being read from.
 			There is a read fuction for each tag type's payload with the following functionality:
 				-It is passed a position in the Buffer to start reading at
 				-It returns an object with two keys:
@@ -41,63 +41,62 @@
 				-It is passed a value to write
 				-The value is written onto the end of the Buffer
 			writeCompound can be passed one additional field, omitEnd:
-				If this field is set to true, the TAG_End byte won't be written at the end.
-				This should only be used if the TAG_Compound is the root-level one, such that the end is implied by the end of the Buffer.
+				If this field is set to true, the nbtConstants.TAG_End byte won't be written at the end.
+				This should only be used if the nbtConstants.TAG_Compound is the root-level one, such that the end is implied by the end of the Buffer.
 
 	USAGE
 	The read functions allow for reading any tag's value at any specified position in the Buffer.
 	This may be useful for specific applications, but it is probably easiest simply to use readComplete().
 	Similarly, it is possible to write any tag's payload onto the end of the write Buffer, but using writeComplete() is recommended.
-	The value that readComplete() returns and writeComplete() expects is a value from a name-value pair of a TAG_Compound's value.
+	The value that readComplete() returns and writeComplete() expects is a value from a name-value pair of a nbtConstants.TAG_Compound's value.
 */
 
-//Import libraries
-const strnum = require('./strint.js'); //does the math required for reading and writing TAG_Long payloads, which are numbers stored as strings
-
 //NBT tag ID constants
-const TAG_End = 0x00;
-const TAG_Byte = 0x01;
-const TAG_Short = 0x02;
-const TAG_Int = 0x03;
-const TAG_Long = 0x04;
-const TAG_Float = 0x05;
-const TAG_Double = 0x06;
-const TAG_Byte_Array = 0x07;
-const TAG_String = 0x08;
-const TAG_List = 0x09;
-const TAG_Compound = 0x0A;
-const TAG_Int_Array = 0x0B;
+const nbtConstants = {
+	TAG_End: 0x00,
+	TAG_Byte: 0x01,
+	TAG_Short: 0x02,
+	TAG_Int: 0x03,
+	TAG_Long: 0x04,
+	TAG_Float: 0x05,
+	TAG_Double: 0x06,
+	TAG_Byte_Array: 0x07,
+	TAG_String: 0x08,
+	TAG_List: 0x09,
+	TAG_Compound: 0x0A,
+	TAG_Int_Array: 0x0B
+};
 
 const longUpperShift = '4294967296'; //stores the value needed to multiply an integer to shift it left 32 bits - for long math
 
-function Read(buffer) {
+function NBTRead(buffer) {
 	this.buffer = buffer;
 }
 //Process the entire Buffer into an object
-Read.prototype.readComplete = function() {
+NBTRead.prototype.readComplete = function() {
 	return this.readCompound(0).value['']; //get past the empty base tag
 };
 //READ NBT - read a certain tag's payload at a certain offset in the Buffer
 //each function returns the read value and its length so the offset can be changed accordingly
-Read.prototype.readByte = function(offset) {
+NBTRead.prototype.readByte = function(offset) {
 	return {
 		'value': this.buffer.readInt8(offset),
 		'length': 1
 	};
 };
-Read.prototype.readShort = function(offset) {
+NBTRead.prototype.readShort = function(offset) {
 	return {
 		'value': this.buffer.readInt16BE(offset),
 		'length': 2
 	};
 };
-Read.prototype.readInt = function(offset) {
+NBTRead.prototype.readInt = function(offset) {
 	return {
 		'value': this.buffer.readInt32BE(offset),
 		'length': 4
 	};
 };
-Read.prototype.readLong = function(offset) {
+NBTRead.prototype.readLong = function(offset) {
 	var upperint = this.readInt(offset);
 	offset += upperint.length;
 	return {
@@ -105,19 +104,19 @@ Read.prototype.readLong = function(offset) {
 		'length': 8
 	};
 };
-Read.prototype.readFloat = function(offset) {
+NBTRead.prototype.readFloat = function(offset) {
 	return {
 		'value': this.buffer.readFloatBE(offset),
 		'length': 4
 	};
 };
-Read.prototype.readDouble = function(offset) {
+NBTRead.prototype.readDouble = function(offset) {
 	return {
 		'value': this.buffer.readDoubleBE(offset),
 		'length': 8
 	};
 };
-Read.prototype.readByte_Array = function(offset) {
+NBTRead.prototype.readByte_Array = function(offset) {
 	var originaloffset = offset;
 	var sizeint = this.readInt(offset); //read the length of the array
 	offset += sizeint.length;
@@ -135,7 +134,7 @@ Read.prototype.readByte_Array = function(offset) {
 		'length': offset - originaloffset
 	};
 };
-Read.prototype.readString = function(offset) {
+NBTRead.prototype.readString = function(offset) {
 	var originaloffset = offset;
 	var bytesshort = this.readShort(offset); //read the length of the string
 	offset += bytesshort.length;
@@ -146,7 +145,7 @@ Read.prototype.readString = function(offset) {
 		'length': offset - originaloffset
 	};
 };
-Read.prototype.readList = function(offset) {
+NBTRead.prototype.readList = function(offset) {
 	var originaloffset = offset;
 	var readFunction, readType;
 
@@ -173,16 +172,16 @@ Read.prototype.readList = function(offset) {
 		'length': offset - originaloffset
 	};
 };
-Read.prototype.readTypeByte = function(offset) { //reads a byte, but returns TAG_End if past the end of the buffer (since it isn't required at the end of NBT data)
+NBTRead.prototype.readTypeByte = function(offset) { //reads a byte, but returns TAG_End if past the end of the buffer (since it isn't required at the end of NBT data)
 	if (offset == this.buffer.length) {
 		return {
-			'value': TAG_End,
+			'value': nbtConstants.TAG_End,
 			'length': 1
 		};
 	}
 	else return this.readByte(offset);
 }
-Read.prototype.readCompound = function(offset) {
+NBTRead.prototype.readCompound = function(offset) {
 	var originaloffset = offset;
 	var readName, //name of the read tag
 		typeInfo, //type name and read function
@@ -191,7 +190,7 @@ Read.prototype.readCompound = function(offset) {
 
 	var typebyte = this.readTypeByte(offset); //read the first byte before the loop in case it is an End tag
 	offset += typebyte.length;
-	while (typebyte.value != TAG_End) { //keep reading until finding an End tag
+	while (typebyte.value != nbtConstants.TAG_End) { //keep reading until finding an End tag
 		readName = this.readString(offset);
 		offset += readName.length;
 		typeInfo = this.extractType(typebyte);
@@ -214,7 +213,7 @@ Read.prototype.readCompound = function(offset) {
 		'length': offset - originaloffset
 	};
 };
-Read.prototype.readInt_Array = function(offset) { //see readByte_Array
+NBTRead.prototype.readInt_Array = function(offset) { //see readByte_Array
 	var originaloffset = offset;
 	var sizeint = this.readInt(offset);
 	offset += sizeint.length;
@@ -233,31 +232,31 @@ Read.prototype.readInt_Array = function(offset) { //see readByte_Array
 	};
 };
 //Select (string) type of tag by the tag ID
-Read.prototype.extractType = function(typebyte) {
+NBTRead.prototype.extractType = function(typebyte) {
 	switch (typebyte.value) { //choose which read function to use based on the type of element
-		case TAG_End: //should never be read
+		case nbtConstants.TAG_End: //should never be read
 			return null;
-		case TAG_Byte:
+		case nbtConstants.TAG_Byte:
 			return 'TAG_Byte';
-		case TAG_Short:
+		case nbtConstants.TAG_Short:
 			return 'TAG_Short';
-		case TAG_Int:
+		case nbtConstants.TAG_Int:
 			return 'TAG_Int';
-		case TAG_Long:
+		case nbtConstants.TAG_Long:
 			return 'TAG_Long';
-		case TAG_Float:
+		case nbtConstants.TAG_Float:
 			return 'TAG_Float';
-		case TAG_Double:
+		case nbtConstants.TAG_Double:
 			return 'TAG_Double';
-		case TAG_Byte_Array:
+		case nbtConstants.TAG_Byte_Array:
 			return 'TAG_Byte_Array';
-		case TAG_String:
+		case nbtConstants.TAG_String:
 			return 'TAG_String';
-		case TAG_List:
+		case nbtConstants.TAG_List:
 			return 'TAG_List';
-		case TAG_Compound:
+		case nbtConstants.TAG_Compound:
 			return 'TAG_Compound';
-		case TAG_Int_Array:
+		case nbtConstants.TAG_Int_Array:
 			return 'TAG_Int_Array';
 		default:
 			throw new Error('No such tag: ' + String(typebyte.value));
@@ -330,7 +329,7 @@ Write.prototype.writeCompound = function(value, omitEnd) {
 		this.writeString(i);
 		this[getWriteFunctionName(value[i].type)](value[i].value);
 	}
-	if (!omitEnd) this.writeByte(TAG_End);
+	if (!omitEnd) this.writeByte(nbtConstants.TAG_End);
 };
 Write.prototype.writeInt_Array = function(value) {
 	this.writeInt(value.length);
@@ -340,29 +339,29 @@ Write.prototype.writeInt_Array = function(value) {
 Write.prototype.computeType = function(typeName) {
 	switch (typeName) {
 		case null: //should never be written
-			return TAG_End;
+			return nbtConstants.TAG_End;
 		case 'TAG_Byte':
-			return TAG_Byte;
+			return nbtConstants.TAG_Byte;
 		case 'TAG_Short':
-			return TAG_Short;
+			return nbtConstants.TAG_Short;
 		case 'TAG_Int':
-			return TAG_Int;
+			return nbtConstants.TAG_Int;
 		case 'TAG_Long':
-			return TAG_Long;
+			return nbtConstants.TAG_Long;
 		case 'TAG_Float':
-			return TAG_Float;
+			return nbtConstants.TAG_Float;
 		case 'TAG_Double':
-			return TAG_Double;
+			return nbtConstants.TAG_Double;
 		case 'TAG_Byte_Array':
-			return TAG_Byte_Array;
+			return nbtConstants.TAG_Byte_Array;
 		case 'TAG_String':
-			return TAG_String;
+			return nbtConstants.TAG_String;
 		case 'TAG_List':
-			return TAG_List;
+			return nbtConstants.TAG_List;
 		case 'TAG_Compound':
-			return TAG_Compound;
+			return nbtConstants.TAG_Compound;
 		case 'TAG_Int_Array':
-			return TAG_Int_Array;
+			return nbtConstants.TAG_Int_Array;
 		default:
 			throw new Error('No such tag: ' + value.type);
 	}
@@ -379,9 +378,4 @@ function getReadFunctionName(type) {
 }
 function getWriteFunctionName(type) {
 	return getFunctionName('write', type);
-}
-
-module.exports = {
-	Read: Read,
-	Write: Write
 }
