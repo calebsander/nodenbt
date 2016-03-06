@@ -13,26 +13,26 @@ const TAG_Compound = 'TAG_Compound';
 const TAG_Int_Array = 'TAG_Int_Array';
 
 const IMAGES = { //stores the URL for all image assets
-	'null': '/images/TAG_End.png',
-	'TAG_Byte': '/images/TAG_Byte.png',
-	'TAG_Short': '/images/TAG_Short.png',
-	'TAG_Int': '/images/TAG_Int.png',
-	'TAG_Long': '/images/TAG_Long.png',
-	'TAG_Float': '/images/TAG_Float.png',
-	'TAG_Double': '/images/TAG_Double.png',
-	'TAG_Byte_Array': '/images/TAG_Byte_Array.png',
-	'TAG_String': '/images/TAG_String.png',
-	'TAG_List': '/images/TAG_List.png',
-	'TAG_Compound': '/images/TAG_Compound.png',
-	'TAG_Int_Array': '/images/TAG_Int_Array.png',
-	'edit': '/images/edit.png',
-	'delete': '/images/delete.png',
-	'rename': '/images/rename.png',
-	'add': '/images/add.png',
-	'coerce': '/images/coerce.png',
-	'up': '/images/up.png',
-	'down': '/images/down.png',
-	'chunk': '/images/chunk.png'
+	'null': './images/TAG_End.png',
+	'TAG_Byte': './images/TAG_Byte.png',
+	'TAG_Short': './images/TAG_Short.png',
+	'TAG_Int': './images/TAG_Int.png',
+	'TAG_Long': './images/TAG_Long.png',
+	'TAG_Float': './images/TAG_Float.png',
+	'TAG_Double': './images/TAG_Double.png',
+	'TAG_Byte_Array': './images/TAG_Byte_Array.png',
+	'TAG_String': './images/TAG_String.png',
+	'TAG_List': './images/TAG_List.png',
+	'TAG_Compound': './images/TAG_Compound.png',
+	'TAG_Int_Array': './images/TAG_Int_Array.png',
+	'edit': './images/edit.png',
+	'delete': './images/delete.png',
+	'rename': './images/rename.png',
+	'add': './images/add.png',
+	'coerce': './images/coerce.png',
+	'up': './images/up.png',
+	'down': './images/down.png',
+	'chunk': './images/chunk.png'
 };
 
 const COERCE_TO = { //stores possible new tag types for conversion (not all may actually work)
