@@ -1,15 +1,16 @@
+//Called when the download button is clicked
 function download() {
 	modified = false;
 	switch (type) {
-		case DAT:
+		case DAT: //NBT format - just convert JavaScript object back into binary data
 			var written = new NBTWrite();
 			written.writeComplete(nbtObject);
 			var toDownload = written.getBuffer().rawBuffer();
 			if (gzip) toDownload = jz.gz.compress(toDownload).buffer;
-			saveAs(new Blob([toDownload], {type: 'application/octet-stream'}), fileName);
+			saveAs(new Blob([toDownload], {'type': 'application/octet-stream'}), fileName);
 			break;
-		case MCA:
-			var chunks = [];
+		case MCA: //MCA - convert decoded chunks back into binary data, then combine the chunks
+			const chunks = [];
 			var tempWrite; //temporary nbt.Write instance
 			var x, z;
 			for (x in mcaObject) {
@@ -25,7 +26,7 @@ function download() {
 			}
 			var written = new MCAWrite();
 			written.setAllChunks(chunks);
-			saveAs(new Blob([written.getBuffer().rawBuffer()], {type: 'application/octet-stream'}), fileName);
+			saveAs(new Blob([written.getBuffer().rawBuffer()], {'type': 'application/octet-stream'}), fileName);
 			break;
 		default:
 			alert('You need to upload a file first');

@@ -1,10 +1,12 @@
+//Interface is a subset of the NodeJS Buffer interface with sufficient functionality for NBT and MCA read/write operations
+//Since the libraries were originally written using NodeJS, this allowed them to be used in normal JavaScript with minimal changes
 const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
 function Buffer(arrayBuffer) {
 	if (!(arrayBuffer instanceof ArrayBuffer)) arrayBuffer = new ArrayBuffer(arrayBuffer);
 	this.buffer = new DataView(arrayBuffer);
-	Object.defineProperty(this, 'length', {value: this.buffer.byteLength, writable: false});
+	Object.defineProperty(this, 'length', {'value': this.buffer.byteLength, 'writable': false});
 }
 Buffer.prototype.readInt8 = function(offset) {
 	return this.buffer.getInt8(offset);
