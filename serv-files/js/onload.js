@@ -60,6 +60,7 @@ $(document).ready(function() { //mess with elements when they have all loaded
 	$('li#li-x,li#li-z').keydown(function() { //make changing either the x or z values update the region filename
 		setTimeout(displayRegionName, 0); //allow new value to be registered before checking it
 	});
+	$('a#download').click(download); //bind click handler to the download function
 	$('a#search').click(showSearch); //bind click handler to the search function
 	$('input#search-text').keydown(function(e) { //display new search results
 		if (e.which == ESC_KEY) closeSearch(); //if escape is pressed, close the panel

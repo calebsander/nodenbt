@@ -2,8 +2,9 @@ const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
 function Buffer(arrayBuffer) {
+	if (!(arrayBuffer instanceof ArrayBuffer)) arrayBuffer = new ArrayBuffer(arrayBuffer);
 	this.buffer = new DataView(arrayBuffer);
-	this.length = arrayBuffer.byteLength;
+	Object.defineProperty(this, 'length', {value: this.buffer.byteLength, writable: false});
 }
 Buffer.prototype.readInt8 = function(offset) {
 	return this.buffer.getInt8(offset);
@@ -32,9 +33,55 @@ Buffer.prototype.readDoubleBE = function(offset) {
 Buffer.prototype.toString = function(encoding, start, end) { //encoding is disregarded, assumed to be 'UTF-8'
 	return decoder.decode(this.rawBuffer().slice(start, end));
 }
+Buffer.prototype.writeInt8 = function(value, offset) {
+	this.buffer.setInt8(offset, value);
+}
+Buffer.prototype.writeInt16BE = function(value, offset) {
+	this.buffer.setInt16(offset, value);
+}
+Buffer.prototype.writeInt32BE = function(value, offset) {
+	this.buffer.setInt32(offset, value);
+}
+Buffer.prototype.writeUInt8 = function(value, offset) {
+	this.buffer.setUint8(offset, value);
+}
+Buffer.prototype.writeUInt16BE = function(value, offset) {
+	this.buffer.setUint16(offset, value);
+}
+Buffer.prototype.writeUInt32BE = function(value, offset) {
+	this.buffer.setUint32(offset, value);
+}
+Buffer.prototype.writeFloatBE = function(value, offset) {
+	this.buffer.setFloat32(offset, value);
+}
+Buffer.prototype.writeDoubleBE = function(value, offset) {
+	this.buffer.setFloat64(offset, value);
+}
+Buffer.prototype.write = function(string, offset) {
+	const encoded = encoder.encode(string);
+	for (var i = 0; i < encoded.length; i++) this.buffer.setUint8(offset + i, encoded[i]);
+}
+Buffer.prototype.fill = function(fillByte, start) {
+	if (start === undefined) start = 0;
+	new Uint8Array(this.rawBuffer()).fill(fillByte, start);
+}
+Buffer.prototype.copy = function(target, targetStart) {
+	new Uint8Array(target.rawBuffer()).set(new Uint8Array(this.rawBuffer()), targetStart);
+}
 Buffer.prototype.slice = function(start, end) {
 	return new Buffer(this.rawBuffer().slice(start, end));
 }
 Buffer.prototype.rawBuffer = function() {
 	return this.buffer.buffer;
+}
+Buffer.concat = function(bufferArray) {
+	var totalLength = 0;
+	for (var sub in bufferArray) totalLength += bufferArray[sub].rawBuffer().byteLength;
+	const newBuffer = new Buffer(new Uint8Array(totalLength).buffer);
+	var currentIndex = 0;
+	for (var sub in bufferArray) {
+		bufferArray[sub].copy(newBuffer, currentIndex);
+		currentIndex += bufferArray[sub].rawBuffer().byteLength;
+	}
+	return newBuffer;
 }

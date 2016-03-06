@@ -263,34 +263,34 @@ NBTRead.prototype.extractType = function(typebyte) {
 	}
 };
 
-function Write() {
+function NBTWrite() {
 	this.buffer = new Buffer(0);
 }
 //Process an entire object into a buffer
-Write.prototype.writeComplete = function(value) {
+NBTWrite.prototype.writeComplete = function(value) {
 	this.writeCompound({'': value}, true); //readd empty base tag
 };
 //WRITE NBT - write a certain tag's payload to the end of the Buffer
 //There is no need to keep track of the offset (unlike in the read functions) because the offset is always the length of the buffer
-Write.prototype.writeByte = function(value) {
+NBTWrite.prototype.writeByte = function(value) {
 	if (value < -128 || value > 127) throw new Error('out of range: ' + String(value));
 	var bytebuffer = new Buffer(1);
 	bytebuffer.writeInt8(value, 0);
 	this.buffer = Buffer.concat([this.buffer, bytebuffer]);
 };
-Write.prototype.writeShort = function(value) {
+NBTWrite.prototype.writeShort = function(value) {
 	if (value < -32768 || value > 32767) throw new Error('out of range: ' + String(value));
 	var shortbuffer = new Buffer(2);
 	shortbuffer.writeInt16BE(value, 0);
 	this.buffer = Buffer.concat([this.buffer, shortbuffer]);
 };
-Write.prototype.writeInt = function(value) {
+NBTWrite.prototype.writeInt = function(value) {
 	if (value < -2147483648 || value > 2147483647) throw new Error('out of range: ' + String(value));
 	var intbuffer = new Buffer(4);
 	intbuffer.writeInt32BE(value, 0);
 	this.buffer = Buffer.concat([this.buffer, intbuffer]);
 };
-Write.prototype.writeLong = function(value) {
+NBTWrite.prototype.writeLong = function(value) {
 	if (strnum.gt(value, '9223372036854775807') || strnum.lt(value, '-9223372036854775808')) throw new Error('out of range: ' + value);
 	var bnb = strnum.div(value, longUpperShift, true); //get upper signed int
 	var bnl = strnum.sub(value, strnum.mul(bnb, longUpperShift)); //get lower unsigned int
@@ -298,32 +298,32 @@ Write.prototype.writeLong = function(value) {
 	this.writeInt(Number(bnb));
 	this.writeInt(Number(bnl));
 };
-Write.prototype.writeFloat = function(value) {
+NBTWrite.prototype.writeFloat = function(value) {
 	var floatbuffer = new Buffer(4);
 	floatbuffer.writeFloatBE(value, 0);
 	this.buffer = Buffer.concat([this.buffer, floatbuffer]);
 };
-Write.prototype.writeDouble = function(value) {
+NBTWrite.prototype.writeDouble = function(value) {
 	var doublebuffer = new Buffer(8);
 	doublebuffer.writeDoubleBE(value, 0);
 	this.buffer = Buffer.concat([this.buffer, doublebuffer]);
 };
-Write.prototype.writeByte_Array = function(value) {
+NBTWrite.prototype.writeByte_Array = function(value) {
 	this.writeInt(value.length);
 	for (var i = 0; i < value.length; i++) this.writeByte(value[i]);
 };
-Write.prototype.writeString = function(value) {
+NBTWrite.prototype.writeString = function(value) {
 	this.writeShort(value.length);
 	var stringbuffer = new Buffer(value.length);
 	stringbuffer.write(value, 0);
 	this.buffer = Buffer.concat([this.buffer, stringbuffer]);
 };
-Write.prototype.writeList = function(value) {
+NBTWrite.prototype.writeList = function(value) {
 	this.writeByte(this.computeType(value.type));
 	this.writeInt(value.list.length);
 	for (var i = 0; i < value.list.length; i++) this[getWriteFunctionName(value.type)](value.list[i]);
 };
-Write.prototype.writeCompound = function(value, omitEnd) {
+NBTWrite.prototype.writeCompound = function(value, omitEnd) {
 	for (var i in value) {
 		this.writeByte(this.computeType(value[i].type));
 		this.writeString(i);
@@ -331,12 +331,12 @@ Write.prototype.writeCompound = function(value, omitEnd) {
 	}
 	if (!omitEnd) this.writeByte(nbtConstants.TAG_End);
 };
-Write.prototype.writeInt_Array = function(value) {
+NBTWrite.prototype.writeInt_Array = function(value) {
 	this.writeInt(value.length);
 	for (var i = 0; i < value.length; i++) this.writeInt(value[i]);
 };
 //The opposite of extractType; returns the TAG id necessary to write the tag
-Write.prototype.computeType = function(typeName) {
+NBTWrite.prototype.computeType = function(typeName) {
 	switch (typeName) {
 		case null: //should never be written
 			return nbtConstants.TAG_End;
@@ -366,7 +366,7 @@ Write.prototype.computeType = function(typeName) {
 			throw new Error('No such tag: ' + value.type);
 	}
 };
-Write.prototype.getBuffer = function() {
+NBTWrite.prototype.getBuffer = function() {
 	return this.buffer;
 };
 

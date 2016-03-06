@@ -28,12 +28,12 @@ function MCARead(buffer) {
 }
 //Get location in locations or timestamps sector of the start of the specified chunk's data
 function calculateChunkOffset(x, z) {
-	return 4 * ((x & 31) + (z & 31) * 32);
+	return ((x & 31) + ((z & 31) << 5)) << 2;
 }
 //Get the index in the file of the sector containing the specified chunk and its length in sectors
 MCARead.prototype.getChunkLocation = function(x, z) {
 	const offset = calculateChunkOffset(x, z);
-	return (this.buffer.readUInt16BE(offset) << 8) + this.buffer.readUInt8(offset + 2);
+	return (this.buffer.readUInt16BE(offset) << 8) | this.buffer.readUInt8(offset + 2);
 };
 //Returns whether a chunk exists
 MCARead.prototype.chunkExists = function(x, z) {
@@ -101,7 +101,7 @@ MCAWrite.prototype.setAllChunks = function(data) {
 	for (var x = 0, z; x < 32; x++) { //iterate over every chunk
 		for (z = 0; z < 32; z++) {
 			if (data[x][z]) { //if chunk doesn't exist, no need to do anything since location is already set to 0x00
-				compressedChunk = zlib.deflateSync(data[x][z]); //compress the raw data
+				compressedChunk = new Buffer(jz.zlib.compress(data[x][z].rawBuffer()).buffer); //compress the raw data
 				chunkLength = compressedChunk.length + 1; //length of chunk data + compression scheme byte
 				length = chunkLength + 4; //length of length int + compression byte + chunk data
 				sectorLength = Math.ceil(length / SECTOR_LENGTH); //all data must fit in a full number of sectors
