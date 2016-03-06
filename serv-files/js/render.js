@@ -22,11 +22,11 @@ function createTypeImg(type) { //create a new type image of a certain type
 }
 function renderJSON(data, key, root) { //a recursive function to create an element that represents a tag
 	/*
-		key will be undefined if invoked by Byte_Array, Int_Array, or List; only relevant if displaying the child of a compound
-		generally, the function finds what type the data is, appends an image with the correct icon, appends a span with the value, and adds mouseover edit function handlers
-		if the data has a key, it adds compound-specific functions (e.g. rename), sets the key attribute, and adds the key to the displayed value
-		Byte_Array, Int_Array, List, and Compound call this function on each of their children and then put them inside a hidden container
-		root will only be true for the root tag
+		key will be undefined if invoked by List; only relevant if displaying the child of a Compound.
+		Generally, the function finds what type the data is, appends an image with the correct icon, appends a span with the value, and adds mouseover edit function handlers.
+		If the data has a key, it adds compound-specific functions (e.g. rename), sets the key attribute, and adds the key to the displayed value.
+		List and Compound call this function on each of their children and then put them inside a hidden container.
+		root will only be true for the root tag.
 		returns the li element
 	*/
 	var display = $('<li>'); //the main element
@@ -69,7 +69,7 @@ function renderJSON(data, key, root) { //a recursive function to create an eleme
 	else if (data.type == TAG_List) { //very similar to TAG_Byte_Array and TAG_Int_Array except getting type information is different and coercibility is calculated differently
 		display.attr('type', String(data.value.type)); //store the type information in the tag
 		container = newContainer();
-		for (var i = 0; i < data.value.list.length; i++) { //add each of the subtags
+		for (var i in data.value.list) { //add each of the subtags
 			container.append(renderJSON({
 				'type': data.value.type,
 				'value': data.value.list[i]

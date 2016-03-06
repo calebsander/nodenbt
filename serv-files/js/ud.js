@@ -1,13 +1,11 @@
 function up() { //move an element in a list up
 	var parent = $(this).parent(); //see edit()
-	$.ajax({ //see save()
-		'url': '/editnbt/up',
-		'type': 'POST',
-		'data': JSON.stringify({'path': getPath(parent)}),
-		'dataType': 'json',
-		'success': editSuccess,
-		'error': editError
-	});
+	const path = getPath(parent);
+	const index = path.pop();
+	const list = walkPath(path).value.list;
+	const temp = list[index - 1];
+	list[index - 1] = list[index];
+	list[index] = temp;
 	modified = true;
 	var prev = parent.prev(); //find previous sibling before detaching the element
 	parent.detach(); //remove the element but keep its mouseover handlers
@@ -19,14 +17,12 @@ function up() { //move an element in a list up
 }
 function down() { //move an element in a list down; see up()
 	var parent = $(this).parent();
-	$.ajax({ //see save()
-		'url': '/editnbt/down',
-		'type': 'POST',
-		'data': JSON.stringify({'path': getPath(parent)}),
-		'dataType': 'json',
-		'success': editSuccess,
-		'error': editError
-	});
+	const path = getPath(parent);
+	const index = path.pop();
+	const list = walkPath(path).value.list;
+	const temp = list[index + 1];
+	list[index + 1] = list[index];
+	list[index] = temp;
 	modified = true;
 	var next = parent.next();
 	parent.detach();

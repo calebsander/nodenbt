@@ -2,26 +2,26 @@
 	JAVASCRIPT OBJECT REPRESENTATION OF NBT DATA
 
 	VALUE FORMATS
-		nbtConstants.TAG_Byte: integer between -128 and 127 inclusive
-		nbtConstants.TAG_Short: integer between -32768 and 32767 inclusive
-		nbtConstants.TAG_Int: integer between -2147483648 and 2147483647 inclusive
-		nbtConstants.TAG_Long: string representation of an integer between -9223372036854775808 and 9223372036854775807 inclusive
+		TAG_Byte: integer between -128 and 127 inclusive
+		TAG_Short: integer between -32768 and 32767 inclusive
+		TAG_Int: integer between -2147483648 and 2147483647 inclusive
+		TAG_Long: string representation of an integer between -9223372036854775808 and 9223372036854775807 inclusive
 			The number must be stored as a string because JavaScript is only capable of storing 53-bit integers
-		nbtConstants.TAG_Flaot: floating point number
-		nbtConstants.TAG_Double: double-precision floating point number
-		nbtConstants.TAG_Byte_Array: array of nbtConstants.TAG_Byte values
-		nbtConstants.TAG_String: string
-		nbtConstants.TAG_List: object with the following keys:
+		TAG_Float: floating point number
+		TAG_Double: double-precision floating point number
+		TAG_Byte_Array: array of TAG_Byte values
+		TAG_String: string
+		TAG_List: object with the following keys:
 			{
-				"type": string representation of tag type (e.g. "nbtConstants.TAG_Double"),
+				"type": string representation of tag type (e.g. "TAG_Double"),
 				"list": array of values of the specified type
 			}
-		nbtConstants.TAG_Compound: object where each key is the name of a tag contained in the compound and its value has the following format:
+		TAG_Compound: object where each key is the name of a tag contained in the compound and its value has the following format:
 			{
-				"type": string representation of tag type (e.g. "nbtConstants.TAG_Double"),
+				"type": string representation of tag type (e.g. "TAG_Double"),
 				"value": value of the specified type
 			}
-		nbtConstants.TAG_Int_Array: array of nbtConstants.TAG_Int values
+		TAG_Int_Array: array of TAG_Int values
 
 	DESIGN
 		The library consists of two parts: read functions and write functions.

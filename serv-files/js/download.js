@@ -1,4 +1,5 @@
 function download() {
+	modified = false;
 	switch (type) {
 		case DAT:
 			var written = new NBTWrite();

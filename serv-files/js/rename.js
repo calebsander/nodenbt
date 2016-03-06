@@ -43,26 +43,19 @@ function checkName() { //checks the value of the nameinput to see if it conflict
 }
 function saveName() { //save the new name
 	if ($('button#namesave').hasClass('btn-success')) { //if the name is invalid, do nothing
-		var path = getPath(saveTag); //get the path before renaming
-		var newName = $('input#nameinput').val(); //fetch the new name
+		const path = getPath(saveTag); //get the path before renaming
+		const newName = $('input#nameinput').val(); //fetch the new name
 		saveTag.attr('key', newName); //save the new key
-		var spanChild = saveTag.children('span'); //get the span element that displays the value
+		const spanChild = saveTag.children('span'); //get the span element that displays the value
 		if (saveTag.children('img.type').attr('src') == IMAGES.TAG_List || saveTag.children('img.type').attr('src') == IMAGES.TAG_Compound || saveTag.children('img.type').attr('src') == IMAGES.TAG_Byte_Array || saveTag.children('img.type').attr('src') == IMAGES.TAG_Int_Array) spanChild.text(newName + ':'); //if the tag has children, just display the new name
 		else spanChild.text(newName + ': ' + formatValue(saveTag.attr('value'), saveTag.children('img.type').attr('src'))); //if a tag without children, display the new name and the unchanged value
 		sortKeys(saveTag.parent());
 		closeName(); //the name input doesn't need to be shown anymore
 		remakeImages();
-		$.ajax({ //see save()
-			'url': '/editnbt/rename',
-			'type': 'POST',
-			'data': JSON.stringify({
-				'path': path,
-				'name': newName
-			}),
-			'dataType': 'json',
-			'success': editSuccess,
-			'error': editError
-		});
+		const tag = path.pop(); //see code for up
+		const compound = walkPath(path).value;
+		compound[newName] = compound[tag]; //switch tags
+		delete compound[tag]; //remove old tag
 		modified = true;
 	}
 }
