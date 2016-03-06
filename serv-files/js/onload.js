@@ -12,6 +12,7 @@ $(document).ready(function() { //mess with elements when they have all loaded
 	editor.keyBinding.onCommandKey = function(e, hashId, keyCode) { //if the escape key is pressed in the editor, close it
 		if (keyCode == ESC_KEY) closeEditor();
 	};
+	editor.$blockScrolling = Infinity;
 
 	$('div#filedrag').hover(function() { //tell the user that they can drop a file on the filedrop
 		$(this).text('Drop file here'); //on mouseover
@@ -38,7 +39,7 @@ $(document).ready(function() { //mess with elements when they have all loaded
 		$('button#namesave').removeClass('focus').addClass('blur');
 	});
 	$('button#namesave').click(function() { //bind click handler to name save button, see $('input#nameinput').keydown() for e.which == 13
-		if (newtag) compoundSave();
+		if (newTag) compoundSave();
 		else saveName();
 	});
 	$('button#typesave').click(function() { //bind click handler to type save button

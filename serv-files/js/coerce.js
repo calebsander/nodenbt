@@ -85,17 +85,21 @@ function saveCoerce() { //checks to see if the coercion is valid, saves it if it
 	}
 	remakeImages();
 	if (success) {
-		$.ajax({ //see save()
-			'url': '/editnbt/coerce',
-			'type': 'POST',
-			'data': JSON.stringify({
-				'path': getPath(saveTag),
-				'type': tagType
-			}),
-			'dataType': 'json',
-			'success': editSuccess,
-			'error': editError
-		});
+		const tag = walkPath(getPath(saveTag)); //get the tag being editted
+		if (tag.type == TAG_List) {
+			if (tag.value.type == TAG_String && tagType != TAG_Long) {
+				for (var element in tag.value.list) tag.value.list[element] = Number(tag.value.list[element]); //convert strings to numbers
+			}
+			else if (tagType == TAG_String) {
+				for (var element in tag.value.list) tag.value.list[element] = String(tag.value.list[element]); //convert numbers to strings
+			}
+			tag.value.type = tagType;
+		}
+		else {
+			if (tag.type == TAG_String && tagType != TAG_Long) tag.value = Number(tag.value); //convert strings to numbers
+			else if (tagType == TAG_String) tag.value = String(tag.value); //convert numbers to strings
+			tag.type = tagType;
+		}
 		modified = true;
 		closeType(); //close the window
 	}

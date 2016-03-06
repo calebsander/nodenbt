@@ -7,19 +7,18 @@ function createTag(type, key) { //calls renderJSON to generate the tag and adds 
 	}, key));
 	if (key !== undefined) sortKeys(container);
 	if (saveTag.children('img.type').attr('src') != IMAGES.TAG_Compound) initializeList(saveTag.children('ul'));
-	$.ajax({ //see save()
-		'url': '/editnbt/add',
-		'type': 'POST',
-		'data': JSON.stringify({
-			'path': getPath(saveTag),
-			'type': type,
-			'value': DEFAULTS[type],
-			'key': key
-		}),
-		'dataType': 'json',
-		'success': editSuccess,
-		'error': editError
-	});
+	const value = DEFAULTS[type];
+	var parent = walkPath(getPath(saveTag)); //get tag being added to
+	switch (parent.type) {
+		case TAG_List:
+			parent.value.list.push(value);
+			break;
+		case TAG_Compound:
+			parent.value[key] = {
+				'type': type,
+				'value': value
+			};
+	}
 	modified = true;
 }
 function add() { //opens the type selection interface for adding a new tag to a compound, or just adds a new tag to a TAG_List, TAG_Byte_Array, or TAG_Int_Array

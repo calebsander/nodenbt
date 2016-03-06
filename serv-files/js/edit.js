@@ -51,7 +51,7 @@ function edit() { //open the editor
 			editorOrig = parent.attr('value');
 			editor.setValue(editorOrig);
 			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_Double');
+			else $('div#editor h3.panel-title').text('Editing TAG_String');
 			break;
 		case IMAGES.TAG_Int_Array: //see case IMAGES.TAG_Byte_Array
 			editorOrig = parent.attr('value').replace(/,/g, '\n');
