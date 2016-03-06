@@ -1,7 +1,12 @@
 var gzip; //whether the file is gzipped
 var type; //the file extension of the upload, for rendering purposes
 var modified = false; //whether the file has been editted
+var currentData; //the JSON version of the read file
 
+const DAT = 0, MCA = 1;
+function reportError(message) {
+	$('div#loading').text(message).addClass('error');
+}
 function fileDragHover(e) { //triggered when dragging a file onto or off the filedrag div
 	e.stopPropagation();
 	e.preventDefault();
@@ -22,33 +27,66 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 		$('div#nbt').prepend($('<div>').attr('id', 'loading').text('Parsing...'));
 		$('li#open').removeClass('open');
 		setTimeout(function() {
-			const read = new NBTRead(new Buffer(e.target.result));
-			const readResult = read.readComplete();
-			gzip = false; //gzip = response.gzip;
-			type = 'dat';
-			/*if (!response.success) { //don't try to display an unparseable file
-				if (response.message == 'invalid file type') $('div#loading').text('NOT A VALID FILE TYPE');
-				else $('div#loading').text('COULD NOT PARSE');
-				$('div#loading').addClass('error');
-			}
-			else {
-				if (!response.success) $('div#loading').text('ERROR').addClass('error'); //something somewhere went wrong
-				else {*/
-					closeAll();
-					$('div#loading').text('Rendering...');
-					setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
-						$('div#nbt').append($('<div>').attr('id', 'filetitle').text(e.target.name));
-						if (type == 'dat') {
-							$('div#nbt').append($('<ul>').append(renderJSON(readResult, undefined, true).addClass('shown'))); //display the JSON
-							$('div#nbt>ul>li>ul').show();
-						}
-						else $('div#nbt').append(renderMCA(readResult).addClass('shown'));
+			const readArray = e.target.result; //the ArrayBuffer containing the data read from the file
+			const fileName = e.target.name;
+			if (fileName.endsWith('mca') || fileName.endsWith('mcr')) {
+				type = MCA;
+				try {
+					const read = new MCARead(new Buffer(readArray));
+					const readResult = read.getAllChunks();
+					console.log(readResult);
+					try {
+						$('div#nbt').append($('<div>').attr('id', 'filetitle').text(fileName));
+						$('div#nbt').append(renderMCA(readResult).addClass('shown'));
 						if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
 						$('div#loading').remove();
 						$('a#search').addClass('shown');
+						currentData = readResult;
+					}
+					catch (e) {
+						reportError('COULD NOT RENDER');
+					}
+				}
+				catch (e) {
+					reportError('COULD NOT PARSE');
+				}
+			}
+			else if (fileName.endsWith('dat')) {
+				type = DAT;
+				var uncompressed;
+				try {
+					uncompressed = jz.gz.decompress(readArray).buffer;
+					gzip = true;
+				}
+				catch (e) {
+					uncompressed = readArray;
+					gzip = false;
+				}
+				try {
+					const read = new NBTRead(new Buffer(uncompressed));
+					const readResult = read.readComplete();
+					closeAll();
+					$('div#loading').text('Rendering...');
+					setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
+						try {
+							$('div#nbt').append($('<div>').attr('id', 'filetitle').text(fileName));
+							$('div#nbt').append($('<ul>').append(renderJSON(readResult, undefined, true).addClass('shown'))); //display the JSON
+							$('div#nbt>ul>li>ul').show();
+							if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
+							$('div#loading').remove();
+							$('a#search').addClass('shown');
+							currentData = readResult;
+						}
+						catch (e) {
+							reportError('COULD NOT RENDER');
+						}
 					}, 100);
-				//}
-			//}
+				}
+				catch (e) {
+					reportError('COULD NOT PARSE')
+				}
+			}
+			else reportError('NOT A VALID FILE TYPE');
 		}, 100);
 	};
 	reader.readAsArrayBuffer(files[0]); //read the file
