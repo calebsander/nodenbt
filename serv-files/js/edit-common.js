@@ -72,7 +72,7 @@ function valueCheck(type, value) { //used to check if the provided value (as a s
 			}
 			return {success: true, value: values};
 		case IMAGES.TAG_String: //if it is longer than TAG_Short's max value, it fails
-			if (!valueCheck(IMAGES.TAG_Short, String(value.length)).success) return {success: false, message: value + " is longer than 32767 characters"};
+			if (!valueCheck(IMAGES.TAG_Short, String(value.length)).success) return {success: false, message: 'That string is longer than 32767 characters'};
 			return {success: true, value: value};
 		case IMAGES.TAG_Int_Array: //see case IMAGES.TAG_Byte_Array
 			var values = value.split('\n');
@@ -122,4 +122,49 @@ function getPath(element) { //get an array representing the path to the tag; use
 	}
 	else if (element.attr('x')) return [element.attr('x'), element.attr('z')]; //if a chunk tag
 	else return []; //if the top element in an NBT structure
+}
+function subType(type) { //gets the type of the inner element of an array
+	switch (type) {
+		case 'TAG_Byte_Array':
+			return 'TAG_Byte';
+		case 'TAG_Int_Array':
+			return 'TAG_Int';
+		default:
+			throw new Error('Invalid array type: ' + type);
+	}
+}
+//Like getPath except does the opposite thing: path array -> reference to tag
+//Note that it returns the object with 'value' and 'type' as keys
+function walkPath(path) {
+	switch (type) {
+		case DAT: //NBT file
+			var selected = nbtObject;
+			break;
+		case MCA: //MCA file
+			var selected = mcaObject[path[0]][path[1]];
+			path.splice(0, 2);
+			break;
+		default:
+			throw new Error('Invalid file type: ' + type);
+	}
+	for (var node = 0 in path) { //iterate over each step
+		switch (selected.type) {
+			case TAG_List:
+				selected = {
+					'type': selected.value.type,
+					'value': selected.value.list[path[node]]
+				};
+				break;
+			case TAG_Compound:
+				selected = selected.value[path[node]];
+				break;
+			default: //TAG_Byte_Array or TAG_Int_Array
+				selected = {
+					'type': subType(selected.type),
+					'value': selected.value[path[node]]
+				};
+		}
+		if (selected === undefined) throw new Error('Not a valid path: ' + String(path[node])); //catch errors rather than letting undefined go through
+	}
+	return selected;
 }

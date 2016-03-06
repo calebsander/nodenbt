@@ -82,17 +82,20 @@ function save() { //save the editted tag
 			if (saveTag.parent().parent().children('img.type').attr('src') == IMAGES.TAG_List) initializeList(saveTag.parent()); //display the index number again
 			remakeImages();
 			closeEditor();
-			$.ajax({ //make a very simple AJAX request with the path to the editted tag and its new value
-				'url': '/editnbt/edit',
-				'type': 'POST',
-				'data': JSON.stringify({
-					'path': getPath(saveTag),
-					'value': valueWorks.value
-				}),
-				'dataType': 'json',
-				'success': editSuccess,
-				'error': editError
-			});
+			const path = getPath(saveTag);
+			const value = valueWorks.value;
+			const tag = path.pop(); //see code for up
+			const parent = walkPath(path);
+			switch (parent.type) { //save the new value (different types of parents require different fashions of locating the child)
+				case TAG_List:
+					parent.value.list[tag] = value;
+					break;
+				case TAG_Compound:
+					parent.value[tag].value = value;
+					break;
+				default: //TAG_Byte_Array or TAG_Int_Array
+					parent.value[tag] = value;
+			}
 			modified = true;
 		}
 		else alert(valueWorks.message); //should be cleaned up
