@@ -1,7 +1,7 @@
 nodenbt
 =======
 ###An HTML interface for viewing NBT and MCA files
-To run, open `index.html` and drag-and-drop a `.dat`, `.mcr`, or `.mca` file in. The code requires a number of newer ECMAScript features, so it may not work in older browsers.
+To run, open `index.html` and drag-and-drop a `.dat`, `.mcr`, or `.mca` file in. The code requires a number of newer ECMAScript features, so it may not work in older browsers. If you don't want to bother downloading this repository, I have hosted a web version at http://calebsander.com/nbt/.
 
 Instructions:
 - Click the icon in front of a Compound or List tag to see its children
