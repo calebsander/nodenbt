@@ -1,8 +1,5 @@
 //Interface is a subset of the NodeJS Buffer interface with sufficient functionality for NBT and MCA read/write operations
 //Since the libraries were originally written using NodeJS, this allowed them to be used in normal JavaScript with minimal changes
-const decoder = new TextDecoder();
-const encoder = new TextEncoder();
-
 function Buffer(arrayBuffer) {
 	if (!(arrayBuffer instanceof ArrayBuffer)) arrayBuffer = new ArrayBuffer(arrayBuffer);
 	this.buffer = new DataView(arrayBuffer);
@@ -33,7 +30,7 @@ Buffer.prototype.readDoubleBE = function(offset) {
 	return this.buffer.getFloat64(offset);
 }
 Buffer.prototype.toString = function(encoding, start, end) { //encoding is disregarded, assumed to be 'UTF-8'
-	return decoder.decode(this.rawBuffer().slice(start, end));
+	return decodeURIComponent(escape(String.fromCharCode.apply(null, new Uint8Array(this.rawBuffer().slice(start, end)))));
 }
 Buffer.prototype.writeInt8 = function(value, offset) {
 	this.buffer.setInt8(offset, value);
@@ -60,8 +57,8 @@ Buffer.prototype.writeDoubleBE = function(value, offset) {
 	this.buffer.setFloat64(offset, value);
 }
 Buffer.prototype.write = function(string, offset) {
-	const encoded = encoder.encode(string);
-	for (var i = 0; i < encoded.length; i++) this.buffer.setUint8(offset + i, encoded[i]);
+	const ascii = unescape(encodeURIComponent(string));
+	for (var i = 0; i < ascii.length; i++) this.buffer.setUint8(offset + i, ascii.charCodeAt(i));
 }
 Buffer.prototype.fill = function(fillByte, start) {
 	if (start === undefined) start = 0;

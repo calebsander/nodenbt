@@ -313,8 +313,9 @@ NBTWrite.prototype.writeByte_Array = function(value) {
 	for (var i = 0; i < value.length; i++) this.writeByte(value[i]);
 };
 NBTWrite.prototype.writeString = function(value) {
-	this.writeShort(value.length);
-	var stringbuffer = new Buffer(value.length);
+	const actuallyWritten = unescape(encodeURIComponent(value));
+	this.writeShort(actuallyWritten.length);
+	var stringbuffer = new Buffer(actuallyWritten.length);
 	stringbuffer.write(value, 0);
 	this.buffer = Buffer.concat([this.buffer, stringbuffer]);
 };

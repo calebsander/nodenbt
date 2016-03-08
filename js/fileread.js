@@ -6,9 +6,10 @@ var mcaObject; //JavaScript object containing read MCA buffer (chunks may be eit
 var fileName; //the name of the uploaded file
 
 const DAT = 0, MCA = 1;
-function reportError(message) {
+function reportError(message, error) {
 	$('div#loading').text(message).addClass('error');
 	type = nbtObject = mcaObject = undefined;
+	console.warn(error);
 }
 function fileDragHover(e) { //triggered when dragging a file onto or off the filedrag div
 	e.stopPropagation();
@@ -48,11 +49,11 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 							mcaObject = readResult;
 						}
 						catch (e) {
-							reportError('COULD NOT RENDER');
+							reportError('COULD NOT RENDER', e);
 						}
 					}
 					catch (e) {
-						reportError('COULD NOT PARSE');
+						reportError('COULD NOT PARSE', e);
 					}
 				}
 				else if (fileName.endsWith('dat')) {
@@ -82,15 +83,15 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 								nbtObject = readResult;
 							}
 							catch (e) {
-								reportError('COULD NOT RENDER');
+								reportError('COULD NOT RENDER', e);
 							}
 						}, 100);
 					}
 					catch (e) {
-						reportError('COULD NOT PARSE')
+						reportError('COULD NOT PARSE', e);
 					}
 				}
-				else reportError('NOT A VALID FILE TYPE');
+				else reportError('NOT A VALID FILE TYPE', e);
 			}, 100);
 		}
 	};
