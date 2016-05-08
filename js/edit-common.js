@@ -147,7 +147,7 @@ function walkPath(path) {
 		default:
 			throw new Error('Invalid file type: ' + type);
 	}
-	for (var node = 0 in path) { //iterate over each step
+	for (var node in path) { //iterate over each step
 		switch (selected.type) {
 			case TAG_List:
 				selected = {
