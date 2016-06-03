@@ -35,6 +35,7 @@ function add() { //opens the type selection interface for adding a new tag to a 
 			$('div#tagtype h3.panel-title').text('Adding tag');
 			$('div#tagname h3.panel-title').text('Adding tag');
 		}
+		$('div#tagname h3.panel-title').append(escHelp); //add help text
 		newTag = true; //note that the function is not trying to coerce an element - tells the type save button what to do when clicked
 		setTypeSelect('null'); //show all possible new tags
 		$('div#tagtype').show(); //allow tag type to be selected

@@ -1,4 +1,6 @@
+var editorTitle; //the element that contains the title of the editor panel
 $(document).ready(function() { //mess with elements when they have all loaded
+	editorTitle = $('div#editor h3.panel-title');
 	$('div#filedrag').on('dragover', fileDragHover).on('dragover', fileDragHover).on('drop', fileSelectHandler);
 
 	editor = ace.edit('ace'); //make a new ace editor

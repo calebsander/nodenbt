@@ -5,7 +5,7 @@ function rename() { //open the rename panel
 	saveTag = parent; //see edit()
 	newtag = false;
 	renameOrig = parent.attr('key'); //store originalname
-	$('div#tagname h3.panel-title').text('Renaming ' + renameOrig); //display what is being renamed
+	$('div#tagname h3.panel-title').text('Renaming ' + renameOrig).append(escHelp); //display what is being renamed
 	$('input#nameinput').keydown(); //trigger the code that checks to see if the new name is valid (make sure no other key is named '')
 	$('div#tagname').show(); //open the renaming window
 	$('input#nameinput').focus(); //target the name input for text input

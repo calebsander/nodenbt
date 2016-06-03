@@ -1,4 +1,5 @@
 function showSearch() { //display the search panel
+	$('div#search-panel h3.panel-title').append(escHelp); //add help text
 	$('div#search-panel').show();
 	$('input#search-text').focus(); //focus on the search input field
 }

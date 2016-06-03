@@ -114,6 +114,10 @@ div#editor, div#search-panel {
 	bottom:0px;
 	display:none;
 }
+span#esc-help {
+	margin-left:20px;
+	color:#999;
+}
 div#ace {
 	position:absolute;
 	top:38px;

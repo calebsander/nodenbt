@@ -1,18 +1,18 @@
 //Strings for tag types are stored in variables of the same name so arbitrary string literals are not used
-const TAG_End = 'TAG_End';
-const TAG_Byte = 'TAG_Byte';
-const TAG_Short = 'TAG_Short';
-const TAG_Int = 'TAG_Int';
-const TAG_Long = 'TAG_Long';
-const TAG_Float = 'TAG_Float';
-const TAG_Double = 'TAG_Double';
-const TAG_Byte_Array = 'TAG_Byte_Array';
-const TAG_String = 'TAG_String';
-const TAG_List = 'TAG_List';
-const TAG_Compound = 'TAG_Compound';
-const TAG_Int_Array = 'TAG_Int_Array';
+var TAG_End = 'TAG_End';
+var TAG_Byte = 'TAG_Byte';
+var TAG_Short = 'TAG_Short';
+var TAG_Int = 'TAG_Int';
+var TAG_Long = 'TAG_Long';
+var TAG_Float = 'TAG_Float';
+var TAG_Double = 'TAG_Double';
+var TAG_Byte_Array = 'TAG_Byte_Array';
+var TAG_String = 'TAG_String';
+var TAG_List = 'TAG_List';
+var TAG_Compound = 'TAG_Compound';
+var TAG_Int_Array = 'TAG_Int_Array';
 
-const IMAGES = { //stores the URL for all image assets
+var IMAGES = { //stores the URL for all image assets
 	'null': './images/TAG_End.png',
 	'TAG_Byte': './images/TAG_Byte.png',
 	'TAG_Short': './images/TAG_Short.png',
@@ -35,7 +35,7 @@ const IMAGES = { //stores the URL for all image assets
 	'chunk': './images/chunk.png'
 };
 
-const COERCE_TO = { //stores possible new tag types for conversion (not all may actually work)
+var COERCE_TO = { //stores possible new tag types for conversion (not all may actually work)
 	//null is a special case because it should only be used on lists of length 0 without a specified type
 	'null': [TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double, TAG_Byte_Array, TAG_String, TAG_List, TAG_Compound, TAG_Int_Array],
 	'TAG_Byte': [TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double, TAG_String],
@@ -49,7 +49,7 @@ const COERCE_TO = { //stores possible new tag types for conversion (not all may 
 	'TAG_Int_Array': [TAG_Byte_Array]
 };
 
-const DEFAULTS = { //the values to initialize new elements at
+var DEFAULTS = { //the values to initialize new elements at
 	'TAG_Byte':       0,
 	'TAG_Short':      0,
 	'TAG_Int':        0,
@@ -67,5 +67,8 @@ const DEFAULTS = { //the values to initialize new elements at
 };
 
 //Constants for keypress codes
-const ENTER_KEY = 13;
-const ESC_KEY = 27;
+var ENTER_KEY = 13;
+var ESC_KEY = 27;
+
+//Contains help text for editor and rename panel
+var escHelp = $('<span>').attr('id', 'esc-help').text('Press ESC to close');

@@ -8,60 +8,61 @@ function edit() { //open the editor
 		case IMAGES.TAG_Byte:
 			editorOrig = parent.attr('value');
 			editor.setValue(editorOrig);
-			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_Byte');
+			if (parent.attr('key')) editorTitle.text('Editing ' + parent.attr('key'));
+			else editorTitle.text('Editing TAG_Byte');
 			break;
 		case IMAGES.TAG_Short:
 			editorOrig = parent.attr('value');
 			editor.setValue(editorOrig);
-			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_Short');
+			if (parent.attr('key')) editorTitle.text('Editing ' + parent.attr('key'));
+			else editorTitle.text('Editing TAG_Short');
 			break;
 		case IMAGES.TAG_Int:
 			editorOrig = parent.attr('value');
 			editor.setValue(editorOrig);
-			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_Int');
+			if (parent.attr('key')) editorTitle.text('Editing ' + parent.attr('key'));
+			else editorTitle.text('Editing TAG_Int');
 			break;
 		case IMAGES.TAG_Long:
 			editorOrig = parent.attr('value');
 			editor.setValue(editorOrig);
-			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_Long');
+			if (parent.attr('key')) editorTitle.text('Editing ' + parent.attr('key'));
+			else editorTitle.text('Editing TAG_Long');
 			break;
 		case IMAGES.TAG_Float:
 			editorOrig = parent.attr('value');
 			editor.setValue(editorOrig);
-			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_Float');
+			if (parent.attr('key')) editorTitle.text('Editing ' + parent.attr('key'));
+			else editorTitle.text('Editing TAG_Float');
 			break;
 		case IMAGES.TAG_Double:
 			editorOrig = parent.attr('value');
 			editor.setValue(editorOrig);
-			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_Double');
+			if (parent.attr('key')) editorTitle.text('Editing ' + parent.attr('key'));
+			else editorTitle.text('Editing TAG_Double');
 			break;
 		case IMAGES.TAG_Byte_Array: //Byte_Array and Int_Array are weird because their value attribute is a sort of array
 			editorOrig = parent.attr('value').replace(/,/g, '\n'); //editor should display each child on its own line
 			editor.setValue(editorOrig);
-			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_Byte_Array');
+			if (parent.attr('key')) editorTitle.text('Editing ' + parent.attr('key'));
+			else editorTitle.text('Editing TAG_Byte_Array');
 			break;
 		case IMAGES.TAG_String:
 			editorOrig = parent.attr('value');
 			editor.setValue(editorOrig);
-			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_String');
+			if (parent.attr('key')) editorTitle.text('Editing ' + parent.attr('key'));
+			else editorTitle.text('Editing TAG_String');
 			break;
 		case IMAGES.TAG_Int_Array: //see case IMAGES.TAG_Byte_Array
 			editorOrig = parent.attr('value').replace(/,/g, '\n');
 			editor.setValue(editorOrig);
-			if (parent.attr('key')) $('div#editor h3.panel-title').text('Editing ' + parent.attr('key'));
-			else $('div#editor h3.panel-title').text('Editing TAG_Int_Array');
+			if (parent.attr('key')) editorTitle.text('Editing ' + parent.attr('key'));
+			else editorTitle.text('Editing TAG_Int_Array');
 			break;
 		default:
 			throw new Error('No such tag: ' + parent.children('img.type').attr('src'));
 	}
+	editorTitle.append(escHelp);
 	$('div#editor').show();
 	editor.focus(); //target editor
 }
