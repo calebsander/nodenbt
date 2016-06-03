@@ -63,7 +63,7 @@ function edit() { //open the editor
 			throw new Error('No such tag: ' + parent.children('img.type').attr('src'));
 	}
 	editorTitle.append(escHelp);
-	$('div#editor').show();
+	editorPanel.show();
 	editor.focus(); //target editor
 }
 function save() { //save the editted tag

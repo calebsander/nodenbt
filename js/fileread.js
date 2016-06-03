@@ -4,18 +4,19 @@ var modified = false; //whether the file has been editted
 var nbtObject; //JavaScript object representing read NBT data
 var mcaObject; //JavaScript object containing read MCA buffer (chunks may be either stored as buffers or nbt objects)
 var fileName; //the name of the uploaded file
+var loadingDiv = $('<div>').attr('id', 'loading'); //the div that contains loading text and error text
 
 const DAT = 0, MCA = 1;
 function reportError(message, error) {
-	$('div#loading').text(message).addClass('error');
+	loadingDiv.text(message).addClass('error');
 	type = nbtObject = mcaObject = undefined;
-	console.warn(error);
+	if (error !== undefined) console.warn(error);
 }
 function fileDragHover(e) { //triggered when dragging a file onto or off the filedrag div
 	e.stopPropagation();
 	e.preventDefault();
-	if (e.type == 'dragover') $('div#filedrag').addClass('hover').text('Drop file here'); //if dragged onto
-	else $('div#filedrag').removeClass('hover').text('Upload'); //if dragged off
+	if (e.type == 'dragover') fileDrag.addClass('hover').text('Drop file here'); //if dragged onto
+	else fileDrag.removeClass('hover').text('Upload'); //if dragged off
 }
 function fileSelectHandler(e) { //triggered when drogging a file onto the filedrag div
 	fileDragHover(e);
@@ -28,24 +29,24 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 	reader.onload = function(e) { //when file has been processed into memory, upload it to the server and display it
 		if (!modified || confirm('You have unsaved changes; are you sure you want to reupload?')) {
 			modified = false;
-			$('div#nbt').children().remove();
+			nbtDiv.children().remove();
 			remakeImages();
-			$('div#nbt').prepend($('<div>').attr('id', 'loading').text('Parsing...'));
-			$('li#open').removeClass('open');
+			nbtDiv.prepend(loadingDiv.removeClass('error').text('Parsing...'));
 			setTimeout(function() {
 				const readArray = e.target.result; //the ArrayBuffer containing the data read from the file
 				fileName = e.target.name;
+				var fileTitle = $('<div>').attr('id', 'filetitle').text(fileName);
 				if (fileName.endsWith('mca') || fileName.endsWith('mcr')) {
 					type = MCA;
 					try {
 						const read = new MCARead(new Buffer(readArray));
 						const readResult = read.getAllChunks();
 						try {
-							$('div#nbt').append($('<div>').attr('id', 'filetitle').text(fileName));
-							$('div#nbt').append(renderMCA(readResult).addClass('shown'));
-							if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
-							$('div#loading').remove();
-							$('a#search').addClass('shown');
+							nbtDiv.append(fileTitle);
+							nbtDiv.append(renderMCA(readResult).addClass('shown'));
+							if (gzip) fileTitle.text(fileTitle.text() + ' (compressed)');
+							loadingDiv.remove();
+							searchDiv.addClass('shown');
 							mcaObject = readResult;
 						}
 						catch (e) {
@@ -71,15 +72,15 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 						const read = new NBTRead(new Buffer(uncompressed));
 						const readResult = read.readComplete();
 						closeAll();
-						$('div#loading').text('Rendering...');
+						loadingDiv.text('Rendering...');
 						setTimeout(function() { //makes sure the previous jQuery commands complete before hanging the client while processing
 							try {
-								$('div#nbt').append($('<div>').attr('id', 'filetitle').text(fileName));
-								$('div#nbt').append($('<ul>').append(renderJSON(readResult, undefined, true).addClass('shown'))); //display the JSON
+								nbtDiv.append(fileTitle);
+								nbtDiv.append($('<ul>').append(renderJSON(readResult, undefined, true).addClass('shown'))); //display the JSON
 								$('div#nbt>ul>li>ul').show();
-								if (gzip) $('div#filetitle').text($('div#filetitle').text() + ' (compressed)');
-								$('div#loading').remove();
-								$('a#search').addClass('shown');
+								if (gzip) fileTitle.text(fileTitle.text() + ' (compressed)');
+								loadingDiv.remove();
+								searchDiv.addClass('shown');
 								nbtObject = readResult;
 							}
 							catch (e) {
@@ -91,7 +92,7 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 						reportError('COULD NOT PARSE', e);
 					}
 				}
-				else reportError('NOT A VALID FILE TYPE', e);
+				else reportError('NOT A VALID FILE TYPE');
 			}, 100);
 		}
 	};

@@ -28,17 +28,17 @@ function add() { //opens the type selection interface for adding a new tag to a 
 	var parentKey = parent.attr('key');
 	if (parent.children('img.type').attr('src') == IMAGES.TAG_Compound) { //if adding an element to a compound
 		if (parentKey) { //if the compound is the child of another compound
-			$('div#tagtype h3.panel-title').text('Adding tag to ' + parentKey); //display what is being edited
-			$('div#tagname h3.panel-title').text('Adding tag to ' + parentKey);
+			typeTitle.text('Adding tag to ' + parentKey); //display what is being edited
+			nameTitle.text('Adding tag to ' + parentKey);
 		}
 		else { //if the compound is the child of a list
-			$('div#tagtype h3.panel-title').text('Adding tag');
-			$('div#tagname h3.panel-title').text('Adding tag');
+			typeTitle.text('Adding tag');
+			nameTitle.text('Adding tag');
 		}
-		$('div#tagname h3.panel-title').append(escHelp); //add help text
+		nameTitle.append(escHelp); //add help text
 		newTag = true; //note that the function is not trying to coerce an element - tells the type save button what to do when clicked
 		setTypeSelect('null'); //show all possible new tags
-		$('div#tagtype').show(); //allow tag type to be selected
+		typePanel.show(); //allow tag type to be selected
 	}
 	else { //adding an element to a list; type is implied and name is not applicable, so create it immediately
 		if (parent.attr('type') == 'null') alert('Cannot add an element to a null-typed list. Convert the type first.');
@@ -47,8 +47,8 @@ function add() { //opens the type selection interface for adding a new tag to a 
 	parent.children('ul').show();
 }
 function compoundSave() { //after name has been entered, add a child to the compound using it and the previously selected type
-	if ($('button#namesave').hasClass('btn-success')) { //if name is invalid, do nothing
-		createTag(tagType, $('input#nameinput').val()); //add the tag
+	if (nameSaveButton.hasClass('btn-success')) { //if name is invalid, do nothing
+		createTag(tagType, nameInput.val()); //add the tag
 		closeName(); //done with choosing a name
 	}
 }

@@ -69,6 +69,3 @@ var DEFAULTS = { //the values to initialize new elements at
 //Constants for keypress codes
 var ENTER_KEY = 13;
 var ESC_KEY = 27;
-
-//Contains help text for editor and rename panel
-var escHelp = $('<span>').attr('id', 'esc-help').text('Press ESC to close');

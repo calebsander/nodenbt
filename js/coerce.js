@@ -14,9 +14,8 @@ function coerce() { //open the type selection interface for coercing a tag
 		}
 	}
 	setTypeSelect(type); //display appropriate type options
-	if (parent.attr('key')) $('div#tagType h3.panel-title').text('Converting ' + parent.attr('key')); //display what is being editted
-	else $('div#tagType h3.panel-title').text('Converting ' + type);
-	$('div#tagType').show(); //open the type input
+	typeTitle.text('Converting ' + parent.attr('key')); //display what is being editted
+	typePanel.show(); //open the type input
 }
 function saveCoerce() { //checks to see if the coercion is valid, saves it if it is
 	if (saveTag.children('img.type').attr('src') == IMAGES.TAG_List) { //if in a list, each value must be checked individually

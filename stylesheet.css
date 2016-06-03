@@ -163,6 +163,9 @@ button#typesave, button#typecancel {
 	border:none;
 	z-index:100;
 }
+div#search-panel {
+	overflow:auto;
+}
 div#search-output {
 	position:relative;
 	top:10px;

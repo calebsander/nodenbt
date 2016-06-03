@@ -2,7 +2,6 @@ var saveTag; //stores the current element being editted for editting function th
 var newTag; //whether a new tag is being added - used to change what happens when entering a new tag type or name
 
 function setTypeSelect(type) { //used to set the possible values of the tag type for adding a new tag or coercing an existing one
-	var typeSelect = $('select#typeinput'); //prefetch the typeselect
 	typeSelect.children().remove(); //remove all the previous options
 	//for each possible coercible value, append a new option to the typeselect
 	for (var i = 0; i < COERCE_TO[type].length; i++) typeSelect.append($('<option>').attr('value', COERCE_TO[type][i]).text(COERCE_TO[type][i]));
@@ -26,14 +25,6 @@ function remakeImages() { //readds the image click handlers
 	coerceImg.off('click').click(coerce);
 	upImg.off('click').click(up);
 	downImg.off('click').click(down);
-}
-
-//Funcions for edit request responses:
-function editSuccess(response) { //on success
-	if (!response.success) editError();
-}
-function editError() { //on error
-	alert('Editting failed?');
 }
 
 function valueCheck(type, value) { //used to check if the provided value (as a string) is valid for the data type
@@ -90,16 +81,16 @@ function formatValue(value, type) { //put quotes around strings for display purp
 }
 
 function closeEditor() { //close the editor
-	$('button#save').removeClass('btn-info');
-	$('div#editor').hide();
+	editorSaveButton.removeClass('btn-info');
+	editorPanel.hide();
 }
 function closeName() { //close the name input
-	$('input#nameinput').val(''); //reset the value of the input so the next request isn't affected by the last input entered
-	$('button#namesave').removeClass('btn-success').removeClass('btn-danger'); //display that the value is unchanged
-	$('div#tagname').hide(); //actually stop displaying the name input
+	nameInput.val(''); //reset the value of the input so the next request isn't affected by the last input entered
+	nameSaveButton.removeClass('btn-success').removeClass('btn-danger'); //display that the value is unchanged
+	namePanel.hide(); //actually stop displaying the name input
 }
 function closeType() { //close the type selection - quick and easy
-	$('div#tagtype').hide();
+	typePanel.hide();
 }
 function closeAll() { //close all editing windows
 	closeEditor();
@@ -168,3 +159,6 @@ function walkPath(path) {
 	}
 	return selected;
 }
+
+//Contains help text for editor and rename panel
+var escHelp = $('<span>').attr('id', 'esc-help').text('Press ESC to close');

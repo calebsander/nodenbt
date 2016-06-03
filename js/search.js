@@ -1,11 +1,10 @@
 function showSearch() { //display the search panel
-	$('div#search-panel h3.panel-title').append(escHelp); //add help text
-	$('div#search-panel').show();
-	$('input#search-text').focus(); //focus on the search input field
+	searchTitle.append(escHelp); //add help text
+	searchPanel.show();
+	searchInput.focus(); //focus on the search input field
 }
 function updateSearchResults() { //display new results
 	var searchTerm = $(this).val().toLowerCase(); //so it is case-insensitive
-	var searchOutput = $('div#search-output');
 	searchOutput.children().remove(); //prepare for adding new results
 	var allSpans = $('div#nbt li>span');
 	var path, //the result of calling getPath() on matching spans
@@ -37,7 +36,7 @@ function showElement(element, skip) { //show all the parent elements to this ele
 	if (nextParent.is('li')) showElement(nextParent); //stop once reaching the top of the display chain
 }
 function closeSearch() { //close the search panel and reset the input
-	$('div#search-panel').hide();
-	$('input#search-text').val('');
-	$('div#search-output').children().remove(); //prepare for adding new results
+	searchPanel.hide();
+	searchInput.val('');
+	searchOutput.children().remove(); //prepare for adding new results
 }
