@@ -14,7 +14,13 @@ var nbtDiv, //the container for all the tags
 	searchPanel, //the search panel
 	fileDrag, //the div that files are dropped onto
 	searchOutput, //the container for the search results
-	searchDiv; //the search link at the top
+	searchDiv, //the search link at the top
+	liX, //the x coordinate input's wrapper
+	liX, //the z coordinate input's wrapper
+	liXInput, //the x coordinate input
+	liZInput, //the z coordinate input
+	fileNameOutput, //the output containing the mcr file name
+	chunkOutput; //the output containing the chunk numbers
 $(document).ready(function() { //mess with elements when they have all loaded
 	nbtDiv = $('div#nbt');
 	editorTitle = $('div#editor h3.panel-title');
@@ -33,11 +39,20 @@ $(document).ready(function() { //mess with elements when they have all loaded
 	fileDrag = $('div#filedrag');
 	searchOutput = $('div#search-output');
 	searchDiv = $('a#search');
+	liX = $('li#li-x');
+	liZ = $('li#li-z');
+	liXInput = liX.children('div').children('input');
+	liZInput = liZ.children('div').children('input');
+	fileNameOutput = $('li#filename');
+	chunkOutput = $('li#chunk');
 
-	fileDrag.on('dragover', fileDragHover).on('dragleave', fileDragHover).on('drop', fileSelectHandler).hover(function() { //tell the user that they can drop a file on the filedrop
-		$(this).text('Drop file here'); //on mouseover
+	$('li#fileparent').on('dragover', fileDragHover).on('dragleave', fileDragHover).on('drop', fileSelectHandler).hover(function() { //tell the user that they can drop a file on the filedrop
+		fileDrag.text('Drop file here'); //on mouseover
 	}, function() {
-		$(this).text('Upload'); //on mouseout
+		fileDrag.text('Upload'); //on mouseout
+	});
+	$('input#upload').change(function(e) {
+		loadFile(e.target.files);
 	});
 
 	editor = ace.edit('ace'); //make a new ace editor
@@ -93,9 +108,15 @@ $(document).ready(function() { //mess with elements when they have all loaded
 	$('li.dropdown.keep-open>ul.dropdown-menu').click(function(e) { //stop dropdown from closing when clicking in it
 		e.stopPropagation();
 	});
-	$('li#li-x,li#li-z').keydown(function() { //make changing either the x or z values update the region filename
-		setTimeout(displayRegionName, 0); //allow new value to be registered before checking it
+	$('a#locator').click(function() {
+		setTimeout(function() {
+			$(liXInput).focus();
+		}, 0);
 	});
+	[liX, liZ].forEach(function(li) {
+		li.keyup(displayRegionName); //make changing either the x or z values update the region filename
+	});
+	liX.keyup();
 	searchDiv.click(showSearch); //bind click handler to the search function
 	$('input#search-text').keydown(function(e) { //display new search results
 		if (e.which == ESC_KEY) closeSearch(); //if escape is pressed, close the panel

@@ -22,6 +22,9 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 	fileDragHover(e);
 	if (e.originalEvent.dataTransfer && e.originalEvent.dataTransfer.files) var files = e.originalEvent.dataTransfer.files;
 	else return;
+	loadFile(files);
+}
+function loadFile(files) {
 	var reader;
 	reader = new FileReader();
 	reader.name = files[0].name;
@@ -36,7 +39,7 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 				const readArray = e.target.result; //the ArrayBuffer containing the data read from the file
 				fileName = e.target.name;
 				var fileTitle = $('<div>').attr('id', 'filetitle').text(fileName);
-				if (fileName.endsWith('mca') || fileName.endsWith('mcr')) {
+				if (fileName.endsWith('.mca') || fileName.endsWith('.mcr')) {
 					type = MCA;
 					try {
 						const read = new MCARead(new Buffer(readArray));
@@ -57,7 +60,7 @@ function fileSelectHandler(e) { //triggered when drogging a file onto the filedr
 						reportError('COULD NOT PARSE', e);
 					}
 				}
-				else if (fileName.endsWith('dat')) {
+				else if (fileName.endsWith('.dat') || fileName.endsWith('.dat_mcr') || fileName.endsWith('.dat_old')) {
 					type = DAT;
 					var uncompressed;
 					try {
