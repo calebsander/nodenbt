@@ -60,7 +60,7 @@ function loadFile(files) {
 						reportError('COULD NOT PARSE', e);
 					}
 				}
-				else if (fileName.endsWith('.dat') || fileName.endsWith('.dat_mcr') || fileName.endsWith('.dat_old')) {
+				else if (fileName.endsWith('.dat') || fileName.endsWith('.dat_mcr') || fileName.endsWith('.dat_old') || fileName.endsWith('.nbt')) {
 					type = DAT;
 					var uncompressed;
 					try {
